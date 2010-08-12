@@ -89,7 +89,7 @@ int main() {
 
 		
 		int minz1=minz,spanz=maxz-minz;
-		printf("minz %d, spanz %d, maxz %d\n",minz,spanz,maxz);
+
 		maxz=INT_MIN; minz=INT_MAX;
 		SDL_FillRect(screen,0,0xffffff);
 		int i=0;
@@ -105,9 +105,9 @@ int main() {
 
 			p->sx=x; p->sy=y; p->sz=z;
 			if(z<minz) minz=z; if(z>maxz) maxz=z;
-			if(z<0) continue;
+
 			float c=(z-minz1)/(float)spanz;
-			unsigned int color=0x7f+0x7f*c;
+			unsigned int color=0xff-0xff*c;
 			color=(color<<16)|(color<<8)|color;
 			SDL_Rect dh={x+sw()/2,y+sh()/2-2,1,5};
 			SDL_FillRect(screen,&dh,color);
