@@ -2,16 +2,19 @@
 #include <SDL/SDL_image.h>
 
 #include <math.h>
+#include <limits.h>
 
 #include "monkey.h"
 
 SDL_Surface *screen;
 
 struct point {
-	int x,y,z;
+	int x,y,z,sx,sy,sz;
 } point[10240];
 
 int pointn=0;
+int selected=-1;
+int minz=INT_MAX,maxz=INT_MIN;
 
 float rot_y=0;
 float rot_x=0;
@@ -20,6 +23,16 @@ float scale=1;
 int sw() { return 800; }
 int sh() { return 600; }
 
+int select_point(int x,int y) {
+	int i,z=INT_MIN,n=-1;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(abs(x-p->sx)<3 && abs(y-p->sy)<3 && p->sz>z) {
+			n=i; z=p->sz;
+		}
+	}
+	return n;
+}
 
 void rot(int x0, int y0, int *x, int *y, float a) {
 	*x=x0*cos(a)+y0*sin(a);
@@ -58,6 +71,8 @@ int main() {
 
 						rot(y0,0,&p->y,&p->z,-rot_x);
 						rot(x0,p->z,&p->x,&p->z,-rot_y);
+					} else {
+						selected=select_point(e.button.x-sw()/2,e.button.y-sh()/2);
 					}
 				}
 				if(e.button.button==SDL_BUTTON_WHEELDOWN) { scale/=1.5; }
@@ -72,6 +87,10 @@ int main() {
 			}
 		}
 
+		
+		int minz1=minz,spanz=maxz-minz;
+		printf("minz %d, spanz %d, maxz %d\n",minz,spanz,maxz);
+		maxz=INT_MIN; minz=INT_MAX;
 		SDL_FillRect(screen,0,0xffffff);
 		int i=0;
 		for(;i<pointn;i++) {
@@ -84,10 +103,20 @@ int main() {
 			x*=scale;
 			y*=scale;
 
+			p->sx=x; p->sy=y; p->sz=z;
+			if(z<minz) minz=z; if(z>maxz) maxz=z;
+			if(z<0) continue;
+			float c=(z-minz1)/(float)spanz;
+			unsigned int color=0x7f+0x7f*c;
+			color=(color<<16)|(color<<8)|color;
 			SDL_Rect dh={x+sw()/2,y+sh()/2-2,1,5};
-			SDL_FillRect(screen,&dh,0x000000);
+			SDL_FillRect(screen,&dh,color);
 			SDL_Rect dv={x+sw()/2-2,y+sh()/2,5,1};
-			SDL_FillRect(screen,&dv,0x000000);
+			SDL_FillRect(screen,&dv,color);
+			if(selected==i) {
+				SDL_Rect ds={x+sw()/2-2,y+sh()/2-2,5,5};
+				SDL_FillRect(screen,&ds,0xFF0000);
+			}
 		}
 		SDL_Flip(screen);
 
