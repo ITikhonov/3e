@@ -3,6 +3,6 @@ CFLAGS=-g
 
 all: 3e
 
-3e: 3e.c monkey.h
+3e: 3e.c
 
 

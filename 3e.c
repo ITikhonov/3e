@@ -5,13 +5,13 @@
 #include <math.h>
 #include <limits.h>
 
-#include "monkey.h"
+#include "m/a.h"
 
 SDL_Surface *screen;
 
 struct point {
 	int x,y,z,sx,sy,sz,sel;
-} point[10240];
+} point[102400];
 
 int pointn=0;
 int minz=INT_MAX,maxz=INT_MIN;
@@ -68,11 +68,11 @@ int main() {
 	screen=SDL_SetVideoMode(800,600,32,SDL_HWSURFACE);
 
 	int i;
-	for(i=0;i<1968;i++) {
+	for(i=0;i<load_n;i++) {
 		struct point *p=point+pointn++;
-		p->x=monkey[i][0]*100;
-		p->y=-monkey[i][1]*100;
-		p->z=monkey[i][2]*100;
+		p->x=load_v[i][0]*100;
+		p->y=-load_v[i][1]*100;
+		p->z=load_v[i][2]*100;
 	}
 
 	for(;;) {
@@ -81,7 +81,7 @@ int main() {
 			if(e.type==SDL_QUIT) goto end;
 			if(e.type==SDL_KEYDOWN) {
 				if(e.key.keysym.sym==SDLK_q) goto end;
-				if(e.key.keysym.sym==SDLK_RETURN) {
+				if(e.key.keysym.sym==SDLK_SPACE) {
 					move(mx,my,mz);
 					mx=my=mz=0;
 				}
