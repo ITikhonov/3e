@@ -5,6 +5,9 @@
 #include <math.h>
 #include <limits.h>
 
+#undef NDEBUG
+#include <assert.h>
+
 #include "m/a.h"
 
 SDL_Surface *screen;
@@ -13,7 +16,13 @@ struct point {
 	int x,y,z,sx,sy,sz,sel;
 } point[102400];
 
+struct tri {
+	int v[3];
+} tri[409600];
+
 int pointn=0;
+int trin=0;
+
 int minz=INT_MAX,maxz=INT_MIN;
 
 float rot_y=0;
@@ -48,6 +57,34 @@ void transform(int x0,int y0,int z0,int *x, int *y, int *z) {
 	*z*=scale;
 }
 
+
+void draw_tri(int v1, int v2, int v3) {
+	struct point *a=point+v1, *b=point+v2, *c=point+v3;
+	struct point *f,*l,*m;
+
+	int ab = a->sy < b->sy;
+	int bc = b->sy < c->sy;
+	int ac = a->sy < c->sy;
+
+	if(ab) {
+		if(bc) { f=a;m=b;l=c; }
+		else { if(ac) { f=a;m=c;l=b; } else { f=c;m=a;l=b;} }
+	} else {
+		if(!bc) { f=c;m=b;l=a; }
+		else { if(ac) { f=b;m=a;l=c; } else { f=b;m=c;l=a;} }
+	}
+
+	assert(f->sy<=m->sy);
+	assert(m->sy<=l->sy);
+}
+
+void draw_tri_wire(int v1, int v2, int v3) {
+	struct point *a=point+v1, *b=point+v2, *c=point+v3;
+	aalineColor(screen,a->sx,a->sy,b->sx,b->sy,0xCCCCCCFF);
+	aalineColor(screen,b->sx,b->sy,c->sx,c->sy,0xCCCCCCFF);
+	aalineColor(screen,c->sx,c->sy,a->sx,a->sy,0xCCCCCCFF);
+}
+
 int mx,my,mz;
 
 void move(int dx,int dy,int dz) {
@@ -73,6 +110,14 @@ int main() {
 		p->x=load_v[i][0]*100;
 		p->y=-load_v[i][1]*100;
 		p->z=load_v[i][2]*100;
+		p->sel=0;
+	}
+
+	for(i=0;i<load_k;i++) {
+		struct tri *p=tri+trin++;
+		p->v[0]=load_t[i][0];
+		p->v[1]=load_t[i][1];
+		p->v[2]=load_t[i][2];
 	}
 
 	for(;;) {
@@ -99,7 +144,7 @@ int main() {
 						rot(y0,0,&p->y,&p->z,-rot_x);
 						rot(x0,p->z,&p->x,&p->z,-rot_y);
 					} else {
-						select_point(e.button.x-sw()/2,e.button.y-sh()/2);
+						select_point(e.button.x,e.button.y);
 					}
 				}
 				if(e.button.button==SDL_BUTTON_WHEELDOWN) { scale/=1.5; }
@@ -120,16 +165,24 @@ int main() {
 			}
 		}
 
+
+		SDL_FillRect(screen,0,0xffffff);
+		int i=0;
+		for(;i<trin;i++) {
+			draw_tri_wire(tri[i].v[0],tri[i].v[1],tri[i].v[2]);
+		}
+
 		
 		int minz1=minz,spanz=maxz-minz;
 
 		maxz=INT_MIN; minz=INT_MAX;
-		SDL_FillRect(screen,0,0xffffff);
-		int i=0;
-		for(;i<pointn;i++) {
+		for(i=0;i<pointn;i++) {
 			struct point *p=point+i;
 
 			int x,y,z; transform(p->x,p->y,p->z,&x,&y,&z);
+
+			x+=sw()/2;
+			y+=sh()/2;
 
 			p->sx=x; p->sy=y; p->sz=z;
 			if(z<minz) minz=z; if(z>maxz) maxz=z;
@@ -138,8 +191,6 @@ int main() {
 			unsigned int color=0xff-0xff*c;
 			color=(color<<16)|(color<<8)|color;
 
-			x+=sw()/2;
-			y+=sh()/2;
 			SDL_Rect dh={x,y-2,1,5};
 			SDL_FillRect(screen,&dh,color);
 			SDL_Rect dv={x-2,y,5,1};
