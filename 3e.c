@@ -50,6 +50,19 @@ void transform(int x0,int y0,int z0,float *x, float *y, float *z) {
 	*z*=scale;
 }
 
+int fromscreen(int dx) {
+	return (dx/300.0)/scale;
+}
+
+void stransform(int xs,int ys,int zs,float *x, float *y, float *z) {
+	float x0 = fromscreen(xs);
+	float y0 = fromscreen(ys);
+	float z0 = fromscreen(zs);
+
+	rot(y0,z0,y,z,-rot_x);
+	rot(x0,*z,x,z,-rot_y);
+}
+
 void select_point(int x,int y) {
 	float fx,fy;
 
@@ -71,7 +84,10 @@ void select_point(int x,int y) {
 	if(n>=0) point[n].sel=!point[n].sel;
 }
 
+int mx,my,mz;
+
 void deselectall() {
+	mx=my=mz=0;
 	int i; for(i=0;i<pointn;i++) { point[i].sel=0; }
 }
 
@@ -88,10 +104,9 @@ void triangle() {
 }
 
 
-int mx,my,mz;
 
 void move(int dx,int dy,int dz) {
-	int i,z=INT_MIN,n=-1;
+	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
 		if(p->sel) {
@@ -142,7 +157,6 @@ GLint sh_scale;
 GLint sh_color;
 
 void initgl() {
-
 	glViewport(0,0,600,600);
 
 	glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -217,16 +231,13 @@ void gldraw() {
 	glBegin(GL_POINTS);
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel) { glVertex3f(p->x+mx,p->y+my,p->z+mz); }
+		if(p->sel) {
+			glVertex3f(p->x+mx,p->y+my,p->z+mz);
+		}
 	}
 	glEnd();
 	glEnable(GL_DEPTH_TEST);
 }
-
-int fromscreen(int dx) {
-	return (dx/300.0)/scale;
-}
-
 
 int main() {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -291,7 +302,9 @@ int main() {
 			if(e.type==SDL_MOUSEMOTION) {
 				if(SDL_GetModState()&KMOD_SHIFT) {
 					if(e.motion.state&SDL_BUTTON(1)) {
-						mx+=fromscreen(e.motion.xrel); my-=fromscreen(e.motion.yrel);
+						float rx,ry,rz;
+						stransform(e.motion.xrel,-e.motion.yrel,0,&rx,&ry,&rz);
+						mx+=rx; my+=ry; mz+=rz;
 					} else if(e.motion.state&SDL_BUTTON(3)) {
 						mz+=fromscreen(e.motion.xrel);
 					}
