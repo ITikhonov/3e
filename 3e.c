@@ -255,13 +255,14 @@ int main() {
 					if(SDL_GetModState()&KMOD_CTRL) {
 						struct point *p=point+pointn++;
 
-						float x0 = e.button.x-sw()/2;
-						float y0 = e.button.y-sh()/2;
-						x0/=scale;
-						y0/=scale;
+						float x0 = fromscreen(e.button.x-300);
+						float y0 = fromscreen(300-e.button.y);
 
-						//rot(y0,0,&p->y,&p->z,-rot_x);
-						//rot(x0,p->z,&p->x,&p->z,-rot_y);
+						float x,y,z;
+
+						rot(y0,0,&y,&z,-rot_x);
+						rot(x0,z,&x,&z,-rot_y);
+						p->x=x; p->y=y; p->z=z;
 					} else {
 						select_point(e.button.x,e.button.y);
 					}
