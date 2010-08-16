@@ -71,6 +71,22 @@ void select_point(int x,int y) {
 	if(n>=0) point[n].sel=!point[n].sel;
 }
 
+void deselectall() {
+	int i; for(i=0;i<pointn;i++) { point[i].sel=0; }
+}
+
+void triangle() {
+	struct tri *t=tri+trin;
+	int i=pointn-1,j=0;
+	for(;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
+	for(i--;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
+	for(i--;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
+
+	printf("truangle %d\n",j);
+
+	if(j==3) trin++;
+}
+
 
 int mx,my,mz;
 
@@ -242,6 +258,8 @@ int main() {
 			if(e.type==SDL_QUIT) goto end;
 			if(e.type==SDL_KEYDOWN) {
 				if(e.key.keysym.sym==SDLK_q) goto end;
+				if(e.key.keysym.sym==SDLK_ESCAPE) deselectall();
+				if(e.key.keysym.sym==SDLK_t) { triangle(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
@@ -262,7 +280,7 @@ int main() {
 
 						rot(y0,0,&y,&z,-rot_x);
 						rot(x0,z,&x,&z,-rot_y);
-						p->x=x; p->y=y; p->z=z;
+						p->x=x; p->y=y; p->z=z; p->sel=1;
 					} else {
 						select_point(e.button.x,e.button.y);
 					}
