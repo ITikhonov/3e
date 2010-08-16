@@ -117,7 +117,9 @@ const char *vshader[1] = {
         "uniform float rot_y;"
         "uniform float scale;"
         "uniform vec4 color;"
+        "uniform vec3 normal;"
         "varying vec4 coloro;"
+        "varying vec3 normalo;"
 
 
 	"vec2 rot(float x, float y, float a);"
@@ -125,30 +127,41 @@ const char *vshader[1] = {
 		"return vec2(x*cos(a)+y*sin(a), -x*sin(a)+y*cos(a));"
 	"}"
 
-        "void main(){"
-                "vec3 p=gl_Vertex.xyz;"
+        "vec3 transform(vec3 v){"
+                "vec3 p=v;"
 		"vec2 r=rot(p.x,p.z,rot_y);"
 		"p.x=r.x; p.z=r.y;"
-
+		""
 		"r=rot(p.y,r.y,rot_x);"
 		"p.y=r.x; p.z=r.y;"
-
+		""
 		"p=p*scale;"
+		"return p;"
+        "}"
+
+        "void main(){"
+                "vec3 p=transform(gl_Vertex.xyz);"
 		"gl_Position=vec4(p,1);"
 		"coloro=color;"
-        "}" };
+		"normalo=transform(normal);"
+        "}"
+};
 
 const char *fshader[1]={
         "varying vec4 coloro;"
+        "varying vec3 normalo;"
         "void main(){"
-		"float z=gl_FragCoord.z;"
-                "gl_FragColor=coloro;"
+		"vec3 n=normalize(normalo);"
+		"vec3 l=normalize(vec3(1,1,1));"
+		"float df=clamp(dot(n,l), 0.0, 1.0);"
+                "gl_FragColor=coloro*0.25 + 0.75*coloro*df;"
         "}" };
 
 
 GLint sh_rot_x;
 GLint sh_rot_y;
 GLint sh_scale;
+GLint sh_normal;
 GLint sh_color;
 
 void initgl() {
@@ -197,8 +210,24 @@ void initgl() {
 	sh_rot_y=glGetUniformLocation(p,"rot_y");
 	sh_scale=glGetUniformLocation(p,"scale");
 	sh_color=glGetUniformLocation(p,"color");
+	sh_normal=glGetUniformLocation(p,"normal");
 
 	glUseProgram(p);
+}
+
+void normal(GLuint v[3],float *x,float *y,float *z) {
+	float a0=point[v[1]].x-point[v[0]].x,
+	      a1=point[v[1]].y-point[v[0]].y,
+	      a2=point[v[1]].z-point[v[0]].z;
+	float b0=point[v[2]].x-point[v[0]].x,
+	      b1=point[v[2]].y-point[v[0]].y,
+	      b2=point[v[2]].z-point[v[0]].z;
+
+
+	// cross
+	*x=a1 * b2 - a2 * b1;
+	*y=a2 * b0 - a0 * b2,
+	*z=a0 * b1 - a1 * b0;
 }
 
 void gldraw() {
@@ -211,11 +240,15 @@ void gldraw() {
 
 	int i;
 	for(i=0;i<trin;i++) {
-		uint32_t c=0xFF<<(i*2);
-		glUniform4f(sh_color,(c>>16)&0xff,(c>>8)&0xff,(c)&0xff,1);
+		float x,y,z;
+		normal(tri[i].v,&x,&y,&z);
+
+		glUniform3f(sh_normal,x,y,z);
+		glUniform4f(sh_color,1,1,1,1);
 		glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 	}
 
+	glUniform4f(sh_normal,0,0,0,0);
 	glUniform4f(sh_color,.5,.5,.5,1);
 	glDrawArrays(GL_POINTS,0,pointn);
 
