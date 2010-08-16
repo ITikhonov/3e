@@ -3,6 +3,7 @@ CFLAGS=-g
 
 all: 3e
 
-3e: 3e.c
+3e: 3e.c m/a.h
+
 
 
