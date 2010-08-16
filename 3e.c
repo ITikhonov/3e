@@ -196,14 +196,21 @@ void gldraw() {
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 
+	glDisable(GL_DEPTH_TEST);
 	glUniform4f(sh_color,1,0,0,1);
 	glBegin(GL_POINTS);
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel) glVertex3f(p->x,p->y,p->z);
+		if(p->sel) { glVertex3f(p->x+mx,p->y+my,p->z+mz); }
 	}
 	glEnd();
+	glEnable(GL_DEPTH_TEST);
 }
+
+int fromscreen(int dx) {
+	return (dx/300.0)/scale;
+}
+
 
 int main() {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -265,15 +272,13 @@ int main() {
 			if(e.type==SDL_MOUSEMOTION) {
 				if(SDL_GetModState()&KMOD_SHIFT) {
 					if(e.motion.state&SDL_BUTTON(1)) {
-						mx+=e.motion.xrel; my+=e.motion.yrel;
+						mx+=fromscreen(e.motion.xrel); my-=fromscreen(e.motion.yrel);
 					} else if(e.motion.state&SDL_BUTTON(3)) {
-						mz+=e.motion.xrel;
+						mz+=fromscreen(e.motion.xrel);
 					}
 				} else if(e.motion.state&SDL_BUTTON(2)) {
-					printf("%0.3f %0.3f ", rot_x, rot_y);
 					rot_y+=(((float)e.motion.xrel)/(sw()/4))*M_PI;
 					rot_x+=(((float)e.motion.yrel)/(sh()/4))*M_PI;
-					printf(" -> %0.3f %0.3f\n", rot_x, rot_y);
 				}
 			}
 		}
