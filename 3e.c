@@ -2,6 +2,9 @@
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_gfxPrimitives.h>
 
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+
 #include <math.h>
 #include <limits.h>
 
@@ -10,14 +13,14 @@
 
 #include "m/a.h"
 
-SDL_Surface *screen;
+SDL_Surface *screen, *rscreen;
 
 struct point {
-	int x,y,z,sx,sy,sz,sel;
+	GLint x,y,z,sx,sy,sz,sel;
 } point[102400];
 
 struct tri {
-	int v[3];
+	GLuint v[3];
 } tri[409600];
 
 int pointn=0;
@@ -27,9 +30,9 @@ int minz=INT_MAX,maxz=INT_MIN;
 
 float rot_y=0;
 float rot_x=0;
-float scale=1/128.0;
+float scale=1/100000.0;
 
-int style=1;
+int style=2;
 
 float zbuf[800][600];
 
@@ -166,11 +169,124 @@ void move(int dx,int dy,int dz) {
 	}
 }
 
+const char *vshader[1] = {
+        "uniform float rot_x;"
+        "uniform float rot_y;"
+        "uniform float scale;"
+        "uniform vec4 color;"
+        "varying vec4 coloro;"
+
+
+	"vec2 rot(float x, float y, float a);"
+	"vec2 rot(float x, float y, float a) {"
+		"return vec2(x*cos(a)+y*sin(a), -x*sin(a)+y*cos(a));"
+	"}"
+
+        "void main(){"
+                "vec3 p=gl_Vertex.xyz;"
+		"vec2 r=rot(p.x,p.z,rot_y);"
+		"p.x=r.x; p.z=r.y;"
+
+		"r=rot(p.y,r.y,rot_x);"
+		"p.y=r.x; p.z=r.y;"
+
+		"p=p*scale;"
+		"gl_Position=vec4(p,1);"
+		"coloro=color;"
+        "}" };
+
+const char *fshader[1]={
+        "varying vec4 coloro;"
+        "void main(){"
+		"float z=gl_FragCoord.z;"
+                "gl_FragColor=coloro;"
+        "}" };
+
+
+GLint sh_rot_x;
+GLint sh_rot_y;
+GLint sh_scale;
+GLint sh_color;
+
+void initgl() {
+
+	glViewport(0,0,600,600);
+
+	glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
+	glEnable(GL_DEPTH_TEST);
+	glPointSize(5);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
+
+	GLuint v = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(v,1,vshader,NULL);
+	glCompileShader(v);
+
+	{ int sl;
+	  glGetShaderiv(v,GL_INFO_LOG_LENGTH,&sl);
+	  char infoLog[sl];
+	  glGetShaderInfoLog(v,sl,&sl,infoLog);
+	  if(sl>0) printf("%s\n",infoLog);
+	}
+
+	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(f,1,fshader,NULL);
+	glCompileShader(f);
+
+	{ int sl;
+	  glGetShaderiv(f,GL_INFO_LOG_LENGTH,&sl);
+	  char infoLog[sl];
+	  glGetShaderInfoLog(f,sl,&sl,infoLog);
+	  if(sl>0) printf("%s\n",infoLog);
+	}
+
+	GLuint p = glCreateProgram();
+	glAttachShader(p,v);
+	glAttachShader(p,f);
+	glLinkProgram(p);
+
+	{ int sl;
+	  glGetProgramiv(p,GL_INFO_LOG_LENGTH,&sl);
+	  char infoLog[sl];
+	  glGetProgramInfoLog(p,sl,&sl,infoLog);
+	  if(sl>0) printf("%s\n",infoLog);
+	}
+	sh_rot_x=glGetUniformLocation(p,"rot_x");
+	sh_rot_y=glGetUniformLocation(p,"rot_y");
+	sh_scale=glGetUniformLocation(p,"scale");
+	sh_color=glGetUniformLocation(p,"color");
+
+	glUseProgram(p);
+}
+
+void gldraw() {
+	glUniform1f(sh_rot_x,rot_x);
+	glUniform1f(sh_rot_y,rot_y);
+	glUniform1f(sh_scale,scale);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_INT, sizeof(struct point), point);
+
+	int i;
+	for(i=0;i<trin;i++) {
+		uint32_t c=0xFF<<(i*2);
+		glUniform4f(sh_color,(c>>16)&0xff,(c>>8)&0xff,(c)&0xff,1);
+		glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
+	}
+
+	glDrawArrays(GL_POINTS,0,pointn);
+	glDisableClientState(GL_VERTEX_ARRAY);
+}
+
 int main() {
 	SDL_Init(SDL_INIT_VIDEO);
 
-	screen=SDL_SetVideoMode(800,600,32,SDL_HWSURFACE);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
+	rscreen=SDL_SetVideoMode(800,600,32,SDL_HWSURFACE|SDL_OPENGLBLIT);
+	screen=SDL_CreateRGBSurface(SDL_SWSURFACE,800,600,32,rscreen->format->Rmask,rscreen->format->Gmask,
+					rscreen->format->Bmask,rscreen->format->Amask);
 	
+	initgl();
 
 	int i;
 	for(i=0;i<load_n;i++) {
@@ -230,14 +346,16 @@ int main() {
 						mz+=e.motion.xrel;
 					}
 				} else if(e.motion.state&SDL_BUTTON(2)) {
+					printf("%0.3f %0.3f ", rot_x, rot_y);
 					rot_y+=(((float)e.motion.xrel)/(sw()/4))*M_PI;
 					rot_x+=(((float)e.motion.yrel)/(sh()/4))*M_PI;
+					printf(" -> %0.3f %0.3f\n", rot_x, rot_y);
 				}
 			}
 		}
 
 
-		SDL_FillRect(screen,0,0xffffff);
+		SDL_FillRect(screen,0,0xffffffff);
 		int i;
 
 		for(i=0;i<800*600;i++) {
@@ -312,7 +430,15 @@ int main() {
 				}
 			}
 		}
-		SDL_Flip(screen);
+
+		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+		//SDL_BlitSurface(screen,0,rscreen,0);
+		//SDL_UpdateRect(rscreen,0,0,0,0);
+
+		gldraw();
+		SDL_GL_SwapBuffers();
+		//SDL_Flip(rscreen);
 
 	}
 end:	SDL_Quit();

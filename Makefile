@@ -1,5 +1,5 @@
-LDLIBS=-lSDL -lSDL_image -lSDL_gfx
-CFLAGS=-g
+LDLIBS=-lSDL -lSDL_image -lSDL_gfx -lGL
+CFLAGS=-g -Wall
 
 all: 3e
 
