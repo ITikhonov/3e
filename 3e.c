@@ -37,12 +37,12 @@ int style=2;
 int sw() { return 800; }
 int sh() { return 600; }
 
-void rot(int x0, int y0, int *x, int *y, float a) {
+void rot(int x0, int y0, float *x, float *y, float a) {
 	*x=x0*cos(a)+y0*sin(a);
 	*y=-x0*sin(a)+y0*cos(a);
 }
 
-void transform(int x0,int y0,int z0,int *x, int *y, int *z) {
+void transform(int x0,int y0,int z0,float *x, float *y, float *z) {
 	rot(x0,z0,x,z,rot_y);
 	rot(y0,*z,y,z,rot_x);
 	*x*=scale;
@@ -51,18 +51,24 @@ void transform(int x0,int y0,int z0,int *x, int *y, int *z) {
 }
 
 void select_point(int x,int y) {
+	float fx,fy;
+
+	fx=(x-300)/300.0;
+	fy=-(y-300)/300.0;
+	float ps=5.0/600;
+
+
 	int i,z=INT_MIN,n=-1;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		int sx,sy,sz;
+		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
-		if(abs(x-sx)<3 && abs(y-sy)<3 && sz>z) {
+		if(fabsf(fx-sx)<ps && fabsf(fy-sy)<ps && sz>z) {
 			n=i; z=sz;
 		}
 	}
 
 	if(n>=0) point[n].sel=!point[n].sel;
-	printf("click: %d\n",n);
 }
 
 
@@ -185,8 +191,18 @@ void gldraw() {
 		glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 	}
 
+	glUniform4f(sh_color,.5,.5,.5,1);
 	glDrawArrays(GL_POINTS,0,pointn);
+
 	glDisableClientState(GL_VERTEX_ARRAY);
+
+	glUniform4f(sh_color,1,0,0,1);
+	glBegin(GL_POINTS);
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(p->sel) glVertex3f(p->x,p->y,p->z);
+	}
+	glEnd();
 }
 
 int main() {
@@ -237,8 +253,8 @@ int main() {
 						x0/=scale;
 						y0/=scale;
 
-						rot(y0,0,&p->y,&p->z,-rot_x);
-						rot(x0,p->z,&p->x,&p->z,-rot_y);
+						//rot(y0,0,&p->y,&p->z,-rot_x);
+						//rot(x0,p->z,&p->x,&p->z,-rot_y);
 					} else {
 						select_point(e.button.x,e.button.y);
 					}
@@ -268,5 +284,6 @@ int main() {
 		SDL_GL_SwapBuffers();
 	}
 end:	SDL_Quit();
+	return 0;
 }
 
