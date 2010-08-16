@@ -151,10 +151,14 @@ const char *fshader[1]={
         "varying vec4 coloro;"
         "varying vec3 normalo;"
         "void main(){"
-		"vec3 n=normalize(normalo);"
-		"vec3 l=normalize(vec3(1,1,1));"
-		"float df=clamp(dot(n,l), 0.0, 1.0);"
-                "gl_FragColor=coloro*0.25 + 0.75*coloro*df;"
+		"if(length(normalo)>0) {"
+			"vec3 n=normalize(normalo);"
+			"vec3 l=normalize(vec3(1,1,1));"
+			"float df=clamp(dot(n,l), 0.0, 1.0);"
+			"gl_FragColor=coloro*0.25 + 0.75*coloro*df;"
+		"} else {"
+			"gl_FragColor=coloro;"
+		"}"
         "}" };
 
 
