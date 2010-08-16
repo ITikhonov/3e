@@ -143,7 +143,11 @@ const char *vshader[1] = {
                 "vec3 p=transform(gl_Vertex.xyz);"
 		"gl_Position=vec4(p,1);"
 		"coloro=color;"
-		"normalo=transform(normal);"
+		"if(length(normal)>0) {"
+			"normalo=transform(normal);"
+		"} else {"
+			"normalo=vec3(0,0,0);"
+		"}"
         "}"
 };
 
@@ -252,7 +256,7 @@ void gldraw() {
 		glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 	}
 
-	glUniform4f(sh_normal,0,0,0,0);
+	glUniform3f(sh_normal,0,0,0);
 	glUniform4f(sh_color,.5,.5,.5,1);
 	glDrawArrays(GL_POINTS,0,pointn);
 
