@@ -84,10 +84,7 @@ void select_point(int x,int y) {
 	if(n>=0) point[n].sel=!point[n].sel;
 }
 
-int mx,my,mz;
-
 void deselectall() {
-	mx=my=mz=0;
 	int i; for(i=0;i<pointn;i++) { point[i].sel=0; }
 }
 
@@ -97,8 +94,6 @@ void triangle() {
 	for(;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
 	for(i--;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
 	for(i--;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
-
-	printf("truangle %d\n",j);
 
 	if(j==3) trin++;
 }
@@ -232,7 +227,7 @@ void gldraw() {
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
 		if(p->sel) {
-			glVertex3f(p->x+mx,p->y+my,p->z+mz);
+			glVertex3f(p->x,p->y,p->z);
 		}
 	}
 	glEnd();
@@ -274,10 +269,6 @@ int main() {
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
-				if(e.key.keysym.sym==SDLK_SPACE) {
-					move(mx,my,mz);
-					mx=my=mz=0;
-				}
 			}
 			if(e.type==SDL_MOUSEBUTTONDOWN) {
 				if(e.button.button==SDL_BUTTON_LEFT) {
@@ -304,9 +295,7 @@ int main() {
 					if(e.motion.state&SDL_BUTTON(1)) {
 						float rx,ry,rz;
 						stransform(e.motion.xrel,-e.motion.yrel,0,&rx,&ry,&rz);
-						mx+=rx; my+=ry; mz+=rz;
-					} else if(e.motion.state&SDL_BUTTON(3)) {
-						mz+=fromscreen(e.motion.xrel);
+						move(rx,ry,rz);
 					}
 				} else if(e.motion.state&SDL_BUTTON(2)) {
 					rot_y+=(((float)e.motion.xrel)/(sw()/4))*M_PI;
