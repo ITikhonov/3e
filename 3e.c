@@ -31,6 +31,7 @@ int minz=INT_MAX,maxz=INT_MIN;
 float rot_y=0;
 float rot_x=0;
 float scale=1/100000.0;
+int vx=0,vy=100,vz=0;
 
 int style=2;
 
@@ -43,6 +44,7 @@ void rot(int x0, int y0, float *x, float *y, float a) {
 }
 
 void transform(int x0,int y0,int z0,float *x, float *y, float *z) {
+	x0-=vx; y0-=vy; z0-=vz;
 	rot(x0,z0,x,z,rot_y);
 	rot(y0,*z,y,z,rot_x);
 	*x*=scale;
@@ -61,6 +63,22 @@ void stransform(int xs,int ys,int zs,float *x, float *y, float *z) {
 
 	rot(y0,z0,y,z,-rot_x);
 	rot(x0,*z,x,z,-rot_y);
+}
+
+
+void focuscenter() {
+	float sx=0,sy=0,sz=0;
+	int i,n=0;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(p->sel) {
+ 			n++;
+			sx=(sx/n)*(n-1)+ p->x/(float)n;
+			sy=(sy/n)*(n-1)+ p->y/(float)n;
+			sz=(sz/n)*(n-1)+ p->z/(float)n;
+		}
+	}
+	vx=sx; vy=sy; vz=sz;
 }
 
 void select_point(int x,int y) {
@@ -129,6 +147,7 @@ const char *vshader[1] = {
         "uniform float scale;"
         "uniform vec4 color;"
         "uniform vec3 normal;"
+        "uniform vec3 center;"
         "varying vec4 coloro;"
         "varying vec3 normalo;"
 
@@ -139,7 +158,7 @@ const char *vshader[1] = {
 	"}"
 
         "vec3 transform(vec3 v){"
-                "vec3 p=v;"
+                "vec3 p=v-center;"
 		"vec2 r=rot(p.x,p.z,rot_y);"
 		"p.x=r.x; p.z=r.y;"
 		""
@@ -182,6 +201,7 @@ GLint sh_rot_y;
 GLint sh_scale;
 GLint sh_normal;
 GLint sh_color;
+GLint sh_center;
 
 void initgl() {
 	glViewport(0,0,600,600);
@@ -230,6 +250,7 @@ void initgl() {
 	sh_scale=glGetUniformLocation(p,"scale");
 	sh_color=glGetUniformLocation(p,"color");
 	sh_normal=glGetUniformLocation(p,"normal");
+	sh_center=glGetUniformLocation(p,"center");
 
 	glUseProgram(p);
 }
@@ -253,6 +274,7 @@ void gldraw() {
 	glUniform1f(sh_rot_x,rot_x);
 	glUniform1f(sh_rot_y,rot_y);
 	glUniform1f(sh_scale,scale);
+	glUniform3f(sh_center,vx,vy,vz);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glPointSize(5);
@@ -337,6 +359,7 @@ int main() {
 				if(e.key.keysym.sym==SDLK_ESCAPE) deselectall();
 				if(e.key.keysym.sym==SDLK_t) { triangle(); }
 				if(e.key.keysym.sym==SDLK_d) { deletetriangle(); }
+				if(e.key.keysym.sym==SDLK_c) { focuscenter(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
