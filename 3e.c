@@ -88,6 +88,17 @@ void deselectall() {
 	int i; for(i=0;i<pointn;i++) { point[i].sel=0; }
 }
 
+void deletetriangle() {
+	int i;
+	for(i=0;i<trin;i++) {
+		struct tri *t=tri+i;
+		if(t->v[0]==-1) continue;
+		if(point[t->v[0]].sel && point[t->v[1]].sel && point[t->v[2]].sel) {
+			t->v[0]=-1;
+		}
+	}
+}
+
 void triangle() {
 	struct tri *t=tri+trin;
 	int i=pointn-1,j=0;
@@ -244,10 +255,12 @@ void gldraw() {
 	glUniform1f(sh_scale,scale);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
+	glPointSize(5);
 	glVertexPointer(3, GL_INT, sizeof(struct point), point);
 
 	int i;
 	for(i=0;i<trin;i++) {
+		if(tri[i].v[0]==-1) continue;
 		float x,y,z;
 		normal(tri[i].v,&x,&y,&z);
 
@@ -262,6 +275,7 @@ void gldraw() {
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 
+	glPointSize(10);
 	glDisable(GL_DEPTH_TEST);
 	glUniform4f(sh_color,1,0,0,1);
 	glBegin(GL_POINTS);
@@ -272,6 +286,21 @@ void gldraw() {
 		}
 	}
 	glEnd();
+
+	glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+	glEnableClientState(GL_VERTEX_ARRAY);
+	for(i=0;i<trin;i++) {
+		struct tri *t=tri+i;
+		if(t->v[0]==-1) continue;
+		int c=point[t->v[0]].sel + point[t->v[1]].sel + point[t->v[2]].sel;
+		if(c>0) {
+			glUniform4f(sh_color,1,0,0,0.33*c);
+			glLineWidth(2*c*c);
+			glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, t->v);
+		}
+	}
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 }
 
@@ -307,6 +336,7 @@ int main() {
 				if(e.key.keysym.sym==SDLK_q) goto end;
 				if(e.key.keysym.sym==SDLK_ESCAPE) deselectall();
 				if(e.key.keysym.sym==SDLK_t) { triangle(); }
+				if(e.key.keysym.sym==SDLK_d) { deletetriangle(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
