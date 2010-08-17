@@ -376,7 +376,7 @@ int main() {
 
 						rot(y0,0,&y,&z,-rot_x);
 						rot(x0,z,&x,&z,-rot_y);
-						p->x=x; p->y=y; p->z=z; p->sel=1;
+						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 					} else {
 						select_point(e.button.x,e.button.y);
 					}
