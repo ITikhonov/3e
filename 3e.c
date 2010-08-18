@@ -480,6 +480,9 @@ int main(int argc, char *argv[]) {
 							if(e.button.y>=400) {
 								rot_x=rot_x+M_PI/2;
 								rot_y=rot_y+M_PI/2;
+							} else if(e.button.y>=200) {
+								rot_x=0;
+								rot_y=90;
 							} else {
 								rot_x=0;
 								rot_y=0;
@@ -512,6 +515,7 @@ int main(int argc, char *argv[]) {
 		gldraw(0,0,600,600,rot_x,rot_y);
 		gldraw(600,0,200,200,rot_x+M_PI/2,rot_y+M_PI/2);
 		gldraw(600,200,200,200,0,0);
+		gldraw(600,400,200,200,0,90);
 		SDL_GL_SwapBuffers();
 	}
 end:	SDL_Quit();
