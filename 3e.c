@@ -399,7 +399,6 @@ void load() {
 		if(!l) break;
 		if(fread(c,sizeof(c),1,f)!=1) return;
 		t->v[0]=c[0]; t->v[1]=c[1]; t->v[2]=c[2];
-		printf("triangle %u : %u %u %u\n",trin,c[0],c[1],c[2]);
 	}
 }
 
@@ -435,25 +434,6 @@ int main(int argc, char *argv[]) {
 	rscreen=SDL_SetVideoMode(800,600,32,SDL_HWSURFACE|SDL_OPENGLBLIT);
 	
 	initgl();
-
-#if 0
-	int i;
-	for(i=0;i<load_n;i++) {
-		struct point *p=point+pointn++;
-		p->x=load_v[i][0]*100;
-		p->y=-load_v[i][1]*100;
-		p->z=load_v[i][2]*100;
-		p->sel=0;
-	}
-
-	for(i=0;i<load_k;i++) {
-		struct tri *p=tri+trin++;
-		p->v[0]=load_t[i][0];
-		p->v[1]=load_t[i][1];
-		p->v[2]=load_t[i][2];
-	}
-#endif
-
 	center();
 
 	for(;;) {
