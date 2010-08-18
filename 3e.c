@@ -81,15 +81,21 @@ void bounds() {
 	mnx=mny=mnz=INT_MAX;
 	sx=sy=sz=0;
 
-	int i,n=0;
-	for(i=0;i<pointn;i++) {
-		struct point *p=point+i;
- 		n++;
-		sx=(sx/n)*(n-1)+ p->x/(float)n;
-		sy=(sy/n)*(n-1)+ p->y/(float)n;
-		sz=(sz/n)*(n-1)+ p->z/(float)n;
-		mxx=MAX(p->x,mxx); mxy=MAX(p->y,mxy); mxz=MAX(p->z,mxz);
-		mnx=MIN(p->x,mnx); mny=MIN(p->y,mny); mnz=MIN(p->z,mnz);
+	if(pointn>3) {
+
+		int i,n=0;
+		for(i=0;i<pointn;i++) {
+			struct point *p=point+i;
+			n++;
+			sx=(sx/n)*(n-1)+ p->x/(float)n;
+			sy=(sy/n)*(n-1)+ p->y/(float)n;
+			sz=(sz/n)*(n-1)+ p->z/(float)n;
+			mxx=MAX(p->x,mxx); mxy=MAX(p->y,mxy); mxz=MAX(p->z,mxz);
+			mnx=MIN(p->x,mnx); mny=MIN(p->y,mny); mnz=MIN(p->z,mnz);
+		}
+	} else {
+		mxx=mxy=mxz=1000;
+		mnx=mny=mnz=-1000;
 	}
 
 	int mx=MAX(MAX(mxx,mxy),mxz);
@@ -385,22 +391,25 @@ char *name;
 
 void load() {
 	FILE *f=fopen(name,"r");
+	if(!f) return;
 	for(;;) {
-		struct point *p=point+pointn++;
+		struct point *p=point+pointn;
 		uint32_t l,c[3];
 		if(fread(&l,sizeof(l),1,f)!=1) return;
 		if(!l) break;
 		if(fread(c,sizeof(c),1,f)!=1) return;
 		p->x=c[0]; p->y=c[1]; p->z=c[2];
+		pointn++;
 	}
 
 	for(;;) {
-		struct tri *t=tri+trin++;
+		struct tri *t=tri+trin;
 		uint32_t l,c[3];
 		if(fread(&l,sizeof(l),1,f)!=1) return;
 		if(!l) break;
 		if(fread(c,sizeof(c),1,f)!=1) return;
 		t->v[0]=c[0]; t->v[1]=c[1]; t->v[2]=c[2];
+		trin++;
 	}
 }
 
@@ -468,8 +477,13 @@ int main(int argc, char *argv[]) {
 						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 					} else {
 						if(e.button.x>=600) {
-							rot_x=rot_x+M_PI/2;
-							rot_y=rot_y+M_PI/2;
+							if(e.button.y>=400) {
+								rot_x=rot_x+M_PI/2;
+								rot_y=rot_y+M_PI/2;
+							} else {
+								rot_x=0;
+								rot_y=0;
+							}
 							
 						} else {
 							select_point(e.button.x,e.button.y);
@@ -497,6 +511,7 @@ int main(int argc, char *argv[]) {
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 		gldraw(0,0,600,600,rot_x,rot_y);
 		gldraw(600,0,200,200,rot_x+M_PI/2,rot_y+M_PI/2);
+		gldraw(600,200,200,200,0,0);
 		SDL_GL_SwapBuffers();
 	}
 end:	SDL_Quit();
