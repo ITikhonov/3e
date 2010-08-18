@@ -354,21 +354,48 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 
 	glUniform3f(sh_normal,0,0,0);
 	glUniform4f(sh_color,.5,.5,.5,1);
-	glDrawArrays(GL_POINTS,0,pointn);
+	//glDrawArrays(GL_POINTS,0,pointn);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 
 	glPointSize(10);
-	glDisable(GL_DEPTH_TEST);
-	glUniform4f(sh_color,1,0,0,1);
-	glBegin(GL_POINTS);
+	glLineWidth(2);
+	glUniform4f(sh_color,0,0,0,1);
+	glBegin(GL_LINES);
+	int lines=0.025/scale;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
 		if(p->sel) {
-			glVertex3f(p->x,p->y,p->z);
+			glEnd();
+			glDisable(GL_DEPTH_TEST);
+			glLineWidth(3);
+			glUniform4f(sh_color,0,1,0,1);
+			lines*=3;
+			glBegin(GL_LINES);
+			glVertex3f(p->x-lines,p->y,p->z);
+			glVertex3f(p->x+lines,p->y,p->z);
+			glVertex3f(p->x,p->y-lines,p->z);
+			glVertex3f(p->x,p->y+lines,p->z);
+			glVertex3f(p->x,p->y,p->z-lines);
+			glVertex3f(p->x,p->y,p->z+lines);
+			glEnd();
+			lines/=3;
+			glUniform4f(sh_color,0,0,0,1);
+			glLineWidth(2);
+			glEnable(GL_DEPTH_TEST);
+			glBegin(GL_LINES);
 		}
+		glVertex3f(p->x-lines,p->y,p->z);
+		glVertex3f(p->x+lines,p->y,p->z);
+		glVertex3f(p->x,p->y-lines,p->z);
+		glVertex3f(p->x,p->y+lines,p->z);
+		glVertex3f(p->x,p->y,p->z-lines);
+		glVertex3f(p->x,p->y,p->z+lines);
+
 	}
 	glEnd();
+
+	glDisable(GL_DEPTH_TEST);
 
 	glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -377,7 +404,11 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 		if(t->v[0]==-1) continue;
 		int c=point[t->v[0]].sel + point[t->v[1]].sel + point[t->v[2]].sel;
 		if(c>0) {
-			glUniform4f(sh_color,1,0,0,0.33*c);
+			switch(c) {
+			case 1:	glUniform4f(sh_color,1,1,1,1); break;
+			case 2:	glUniform4f(sh_color,0,0,1,1); break;
+			case 3:	glUniform4f(sh_color,1,0,0,1); break;
+			}
 			glLineWidth(2*c*c);
 			glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, t->v);
 		}
