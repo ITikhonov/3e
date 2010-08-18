@@ -513,10 +513,10 @@ int main(int argc, char *argv[]) {
 								rot_y=rot_y+M_PI/2;
 							} else if(e.button.y>=200) {
 								rot_x=0;
-								rot_y=90;
+								rot_y=0;
 							} else {
 								rot_x=0;
-								rot_y=0;
+								rot_y=M_PI/2;
 							}
 							
 						} else {
