@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <SDL/SDL_gfxPrimitives.h>
@@ -7,6 +9,7 @@
 
 #include <math.h>
 #include <limits.h>
+#include <stdint.h>
 
 #undef NDEBUG
 #include <assert.h>
@@ -376,7 +379,56 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	glEnable(GL_DEPTH_TEST);
 }
 
-int main() {
+char *name;
+
+void load() {
+	FILE *f=fopen(name,"r");
+	for(;;) {
+		struct point *p=point+pointn++;
+		uint32_t l,c[3];
+		if(fread(&l,sizeof(l),1,f)!=1) return;
+		if(!l) break;
+		if(fread(c,sizeof(c),1,f)!=1) return;
+		p->x=c[0]; p->y=c[1]; p->z=c[2];
+	}
+
+	for(;;) {
+		struct tri *t=tri+trin++;
+		uint32_t l,c[3];
+		if(fread(&l,sizeof(l),1,f)!=1) return;
+		if(!l) break;
+		if(fread(c,sizeof(c),1,f)!=1) return;
+		t->v[0]=c[0]; t->v[1]=c[1]; t->v[2]=c[2];
+		printf("triangle %u : %u %u %u\n",trin,c[0],c[1],c[2]);
+	}
+}
+
+void save() {
+	FILE *f=fopen(name,"w");
+	int i;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		int32_t c[4]={sizeof(uint32_t[3]),p->x,p->y,p->z};
+		fwrite(c,sizeof(c),1,f);
+		
+	}
+	uint32_t z=0;
+	fwrite(&z,sizeof(z),1,f);
+
+	for(i=0;i<trin;i++) {
+		struct tri *t=tri+i;
+		if(t->v[0]==-1) continue;
+		uint32_t c[4]={sizeof(uint32_t[3]),t->v[0],t->v[1],t->v[2]};
+		fwrite(c,sizeof(c),1,f);
+	}
+	fwrite(&z,sizeof(z),1,f);
+	fclose(f);
+}
+
+int main(int argc, char *argv[]) {
+	name=argv[1];
+	if(argc==2) load();
+
 	SDL_Init(SDL_INIT_VIDEO);
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
@@ -384,6 +436,7 @@ int main() {
 	
 	initgl();
 
+#if 0
 	int i;
 	for(i=0;i<load_n;i++) {
 		struct point *p=point+pointn++;
@@ -399,6 +452,7 @@ int main() {
 		p->v[1]=load_t[i][1];
 		p->v[2]=load_t[i][2];
 	}
+#endif
 
 	center();
 
@@ -412,6 +466,7 @@ int main() {
 				if(e.key.keysym.sym==SDLK_t) { triangle(); }
 				if(e.key.keysym.sym==SDLK_d) { deletetriangle(); }
 				if(e.key.keysym.sym==SDLK_c) { focuscenter(); }
+				if(e.key.keysym.sym==SDLK_s) { save(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
