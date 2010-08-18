@@ -204,8 +204,6 @@ GLint sh_color;
 GLint sh_center;
 
 void initgl() {
-	glViewport(0,0,600,600);
-
 	glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
 	glEnable(GL_DEPTH_TEST);
 	glPointSize(5);
@@ -270,7 +268,9 @@ void normal(GLuint v[3],float *x,float *y,float *z) {
 	*z=a0 * b1 - a1 * b0;
 }
 
-void gldraw() {
+void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
+	glViewport(x,y,w,h);
+
 	glUniform1f(sh_rot_x,rot_x);
 	glUniform1f(sh_rot_y,rot_y);
 	glUniform1f(sh_scale,scale);
@@ -400,7 +400,8 @@ int main() {
 
 
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		gldraw();
+		gldraw(0,0,600,600,rot_x,rot_y);
+		gldraw(600,0,200,200,rot_x+M_PI/2,rot_y+M_PI/2);
 		SDL_GL_SwapBuffers();
 	}
 end:	SDL_Quit();
