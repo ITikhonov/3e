@@ -378,7 +378,13 @@ int main() {
 						rot(x0,z,&x,&z,-rot_y);
 						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 					} else {
-						select_point(e.button.x,e.button.y);
+						if(e.button.x>=600) {
+							rot_x=rot_x+M_PI/2;
+							rot_y=rot_y+M_PI/2;
+							
+						} else {
+							select_point(e.button.x,e.button.y);
+						}
 					}
 				}
 				if(e.button.button==SDL_BUTTON_WHEELDOWN) { scale/=1.5; }
