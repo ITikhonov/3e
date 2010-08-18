@@ -30,7 +30,8 @@ int minz=INT_MAX,maxz=INT_MIN;
 
 float rot_y=0;
 float rot_x=0;
-float scale=1/100000.0;
+float scale=1;
+float zshift[2];
 int vx=0,vy=100,vz=0;
 
 int style=2;
@@ -65,9 +66,50 @@ void stransform(int xs,int ys,int zs,float *x, float *y, float *z) {
 	rot(x0,*z,x,z,-rot_y);
 }
 
+#define MAX(x,y) (((x)>(y))?(x):(y))
+#define MIN(x,y) (((x)<(y))?(x):(y))
+
+int mxx,mxy,mxz;
+int mnx,mny,mnz;
+float sx,sy,sz;
+
+void bounds() {
+	mxx=mxy=mxz=INT_MIN;
+	mnx=mny=mnz=INT_MAX;
+	sx=sy=sz=0;
+
+	int i,n=0;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+ 		n++;
+		sx=(sx/n)*(n-1)+ p->x/(float)n;
+		sy=(sy/n)*(n-1)+ p->y/(float)n;
+		sz=(sz/n)*(n-1)+ p->z/(float)n;
+		mxx=MAX(p->x,mxx); mxy=MAX(p->y,mxy); mxz=MAX(p->z,mxz);
+		mnx=MIN(p->x,mnx); mny=MIN(p->y,mny); mnz=MIN(p->z,mnz);
+	}
+
+	int mx=MAX(MAX(mxx,mxy),mxz);
+	int mn=MIN(MIN(mnx,mny),mnz);
+	mx=MAX(-mn,mx);
+	zshift[0]=-mx;
+	zshift[1]=2*mx;
+}
+
+
+void center() {
+	bounds();
+	float scx=1.0/(mxx-mnx);
+	float scy=1.0/(mxy-mny);
+	float scz=1.0/(mxz-mnz);
+
+	scale=MIN(scz,MIN(scx,scy));
+	vx=sx; vy=sy; vz=sz;
+}
 
 void focuscenter() {
 	float sx=0,sy=0,sz=0;
+
 	int i,n=0;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
@@ -145,6 +187,7 @@ const char *vshader[1] = {
         "uniform float rot_x;"
         "uniform float rot_y;"
         "uniform float scale;"
+        "uniform vec2 zshift;"
         "uniform vec4 color;"
         "uniform vec3 normal;"
         "uniform vec3 center;"
@@ -165,7 +208,9 @@ const char *vshader[1] = {
 		"r=rot(p.y,r.y,rot_x);"
 		"p.y=r.x; p.z=r.y;"
 		""
-		"p=p*scale;"
+		"p.x=p.x*scale;"
+		"p.y=p.y*scale;"
+		"p.z=(p.z-zshift.x)/(zshift.y - zshift.x);"
 		"return p;"
         "}"
 
@@ -199,6 +244,7 @@ const char *fshader[1]={
 GLint sh_rot_x;
 GLint sh_rot_y;
 GLint sh_scale;
+GLint sh_zshift;
 GLint sh_normal;
 GLint sh_color;
 GLint sh_center;
@@ -246,6 +292,7 @@ void initgl() {
 	sh_rot_x=glGetUniformLocation(p,"rot_x");
 	sh_rot_y=glGetUniformLocation(p,"rot_y");
 	sh_scale=glGetUniformLocation(p,"scale");
+	sh_zshift=glGetUniformLocation(p,"zshift");
 	sh_color=glGetUniformLocation(p,"color");
 	sh_normal=glGetUniformLocation(p,"normal");
 	sh_center=glGetUniformLocation(p,"center");
@@ -271,9 +318,12 @@ void normal(GLuint v[3],float *x,float *y,float *z) {
 void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	glViewport(x,y,w,h);
 
+	bounds();
+
 	glUniform1f(sh_rot_x,rot_x);
 	glUniform1f(sh_rot_y,rot_y);
 	glUniform1f(sh_scale,scale);
+	glUniform2f(sh_zshift,zshift[0],zshift[1]);
 	glUniform3f(sh_center,vx,vy,vz);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
@@ -349,6 +399,8 @@ int main() {
 		p->v[1]=load_t[i][1];
 		p->v[2]=load_t[i][2];
 	}
+
+	center();
 
 	for(;;) {
 		SDL_Event e;
