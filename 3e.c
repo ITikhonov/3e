@@ -133,7 +133,7 @@ void focuscenter() {
 	vx=sx; vy=sy; vz=sz;
 }
 
-void clean() {
+void delete() {
 	int i;
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
@@ -146,7 +146,7 @@ void clean() {
 		struct point *p=point+i;
 		if(p->sel&2) continue;
 		if(p->sel&0x100) { p->sel&=~0x100; continue; }
-		p->sel|=2;
+		if(p->sel) { p->sel|=2; }
 	}
 }
 
@@ -345,8 +345,6 @@ void normal(GLuint v[3],float *x,float *y,float *z) {
 	      b1=point[v[2]].y-point[v[0]].y,
 	      b2=point[v[2]].z-point[v[0]].z;
 
-
-	// cross
 	*x=a1 * b2 - a2 * b1;
 	*y=a2 * b0 - a0 * b2,
 	*z=a0 * b1 - a1 * b0;
@@ -380,7 +378,6 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 
 	glUniform3f(sh_normal,0,0,0);
 	glUniform4f(sh_color,.5,.5,.5,1);
-	//glDrawArrays(GL_POINTS,0,pointn);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 
@@ -517,7 +514,7 @@ int main(int argc, char *argv[]) {
 				if(e.key.keysym.sym==SDLK_d) { deletetriangle(); }
 				if(e.key.keysym.sym==SDLK_c) { focuscenter(); }
 				if(e.key.keysym.sym==SDLK_s) { save(); }
-				if(e.key.keysym.sym==SDLK_g) { clean(); }
+				if(e.key.keysym.sym==SDLK_r) { delete(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
