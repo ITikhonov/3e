@@ -82,10 +82,10 @@ void bounds() {
 	sx=sy=sz=0;
 
 	if(pointn>3) {
-
 		int i,n=0;
 		for(i=0;i<pointn;i++) {
 			struct point *p=point+i;
+			if(p->sel&2) continue;
 			n++;
 			sx=(sx/n)*(n-1)+ p->x/(float)n;
 			sy=(sy/n)*(n-1)+ p->y/(float)n;
@@ -122,6 +122,7 @@ void focuscenter() {
 	int i,n=0;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(p->sel&2) continue;
 		if(p->sel) {
  			n++;
 			sx=(sx/n)*(n-1)+ p->x/(float)n;
@@ -130,6 +131,23 @@ void focuscenter() {
 		}
 	}
 	vx=sx; vy=sy; vz=sz;
+}
+
+void clean() {
+	int i;
+	for(i=0;i<trin;i++) {
+		struct tri *t=tri+i;
+		point[t->v[0]].sel|=0x100;
+		point[t->v[1]].sel|=0x100;
+		point[t->v[2]].sel|=0x100;
+	}
+
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(p->sel&2) continue;
+		if(p->sel&0x100) { p->sel&=~0x100; continue; }
+		p->sel|=2;
+	}
 }
 
 void select_point(int x,int y) {
@@ -143,6 +161,7 @@ void select_point(int x,int y) {
 	int i,z=INT_MIN,n=-1;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(p->sel&2) continue;
 		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		if(fabsf(fx-sx)<ps && fabsf(fy-sy)<ps && sz>z) {
@@ -154,7 +173,12 @@ void select_point(int x,int y) {
 }
 
 void deselectall() {
-	int i; for(i=0;i<pointn;i++) { point[i].sel=0; }
+	int i;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(p->sel&2) continue;
+ 		p->sel=0;
+	}
 }
 
 void deletetriangle() {
@@ -184,6 +208,7 @@ void move(int dx,int dy,int dz) {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(p->sel&2) continue;
 		if(p->sel) {
 			p->x+=dx;
 			p->y+=dy;
@@ -225,13 +250,14 @@ const char *vshader[1] = {
 
         "void main(){"
                 "vec3 p=transform(gl_Vertex.xyz);"
-		"gl_Position=vec4(p,1);"
 		"coloro=color;"
 		"if(length(normal)>0) {"
 			"normalo=transform(normal);"
+			"p.z-=0.0001;"
 		"} else {"
 			"normalo=vec3(0,0,0);"
 		"}"
+		"gl_Position=vec4(p,1);"
         "}"
 };
 
@@ -365,6 +391,7 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	int lines=0.025/scale;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(p->sel&2) continue;
 		if(p->sel) {
 			glEnd();
 			glDisable(GL_DEPTH_TEST);
@@ -449,6 +476,7 @@ void save() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(p->sel&2) continue;
 		int32_t c[4]={sizeof(uint32_t[3]),p->x,p->y,p->z};
 		fwrite(c,sizeof(c),1,f);
 		
@@ -489,6 +517,7 @@ int main(int argc, char *argv[]) {
 				if(e.key.keysym.sym==SDLK_d) { deletetriangle(); }
 				if(e.key.keysym.sym==SDLK_c) { focuscenter(); }
 				if(e.key.keysym.sym==SDLK_s) { save(); }
+				if(e.key.keysym.sym==SDLK_g) { clean(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
