@@ -60,10 +60,10 @@ int fromscreen(int dx) {
 	return (dx/300.0)/scale;
 }
 
-void stransform(int xs,int ys,int zs,float *x, float *y, float *z) {
+void stransform(int xs,int ys,float zs,float *x, float *y, float *z) {
 	float x0 = fromscreen(xs);
 	float y0 = fromscreen(ys);
-	float z0 = fromscreen(zs);
+	float z0 = zs;
 
 	rot(y0,z0,y,z,-rot_x);
 	rot(x0,*z,x,z,-rot_y);
@@ -524,14 +524,9 @@ int main(int argc, char *argv[]) {
 					if(SDL_GetModState()&KMOD_CTRL) {
 						struct point *p=point+pointn++;
 
-						float x0 = fromscreen(e.button.x-300);
-						float y0 = fromscreen(300-e.button.y);
-
 						float x,y,z;
-
-						rot(y0,0,&y,&z,-rot_x);
-						rot(x0,z,&x,&z,-rot_y);
-						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
+						stransform(e.button.x-300,300-e.button.y,vz,&x,&y,&z);
+						p->x=x+vx; p->y=y+vy; p->z=z; p->sel=1;
 					} else {
 						if(e.button.x>=600) {
 							if(e.button.y>=400) {
@@ -572,7 +567,7 @@ int main(int argc, char *argv[]) {
 		gldraw(0,0,600,600,rot_x,rot_y);
 		gldraw(600,0,200,200,rot_x+M_PI/2,rot_y+M_PI/2);
 		gldraw(600,200,200,200,0,0);
-		gldraw(600,400,200,200,0,90);
+		gldraw(600,400,200,200,0,M_PI/2);
 		SDL_GL_SwapBuffers();
 	}
 end:	SDL_Quit();
