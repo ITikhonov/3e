@@ -421,6 +421,12 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 
 	glDisable(GL_DEPTH_TEST);
 
+	glPointSize(10);
+	glUniform4f(sh_color,1,0,0,1);
+	glBegin(GL_POINTS);
+	glVertex3f(vx,vy,vz);
+	glEnd();
+
 	glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	for(i=0;i<trin;i++) {
@@ -525,8 +531,13 @@ int main(int argc, char *argv[]) {
 						struct point *p=point+pointn++;
 
 						float x,y,z;
-						stransform(e.button.x-300,300-e.button.y,vz,&x,&y,&z);
-						p->x=x+vx; p->y=y+vy; p->z=z; p->sel=1;
+						x=fromscreen(e.button.x-300);
+						y=fromscreen(300-e.button.y);
+
+						rot(y,0,&y,&z,-rot_x);
+						rot(x,z,&x,&z,-rot_y);
+
+						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 					} else {
 						if(e.button.x>=600) {
 							if(e.button.y>=400) {
