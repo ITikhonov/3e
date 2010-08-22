@@ -16,7 +16,7 @@
 
 #include "m/a.h"
 
-SDL_Surface *screen, *rscreen;
+SDL_Surface *screen;
 
 struct point {
 	GLint x,y,z,sel;
@@ -39,8 +39,8 @@ int vx=0,vy=100,vz=0;
 
 int style=2;
 
-int sw() { return 800; }
-int sh() { return 600; }
+int sw=800;
+int sh=600;
 
 void rot(int x0, int y0, float *x, float *y, float a) {
 	*x=x0*cos(a)+y0*sin(a);
@@ -57,7 +57,7 @@ void transform(int x0,int y0,int z0,float *x, float *y, float *z) {
 }
 
 int fromscreen(int dx) {
-	return (dx/300.0)/scale;
+	return (dx/(float)(sh/2.0))/scale;
 }
 
 void stransform(int xs,int ys,float zs,float *x, float *y, float *z) {
@@ -153,9 +153,9 @@ void delete() {
 void select_point(int x,int y) {
 	float fx,fy;
 
-	fx=(x-300)/300.0;
-	fy=-(y-300)/300.0;
-	float ps=5.0/600;
+	fx=(x-(sh/2))/(sh/2.0);
+	fy=-(y-sh/2)/(sh/2.0);
+	float ps=5.0/sh;
 
 
 	int i,z=INT_MIN,n=-1;
@@ -504,7 +504,7 @@ int main(int argc, char *argv[]) {
 	SDL_Init(SDL_INIT_VIDEO);
 
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER,1);
-	rscreen=SDL_SetVideoMode(800,600,32,SDL_HWSURFACE|SDL_OPENGLBLIT);
+	screen=SDL_SetVideoMode(800,600,32,SDL_HWSURFACE|SDL_OPENGLBLIT|SDL_RESIZABLE);
 	
 	initgl();
 	center();
@@ -513,6 +513,10 @@ int main(int argc, char *argv[]) {
 		SDL_Event e;
 		while(SDL_PollEvent(&e)) {
 			if(e.type==SDL_QUIT) goto end;
+			if(e.type==SDL_VIDEORESIZE) {
+				sw=e.resize.w; sh=e.resize.h;
+				screen=SDL_SetVideoMode(sw,sh,32,SDL_HWSURFACE|SDL_OPENGLBLIT|SDL_RESIZABLE);
+			}
 			if(e.type==SDL_KEYDOWN) {
 				if(e.key.keysym.sym==SDLK_q) goto end;
 				if(e.key.keysym.sym==SDLK_ESCAPE) deselectall();
@@ -531,19 +535,19 @@ int main(int argc, char *argv[]) {
 						struct point *p=point+pointn++;
 
 						float x,y,z;
-						x=fromscreen(e.button.x-300);
-						y=fromscreen(300-e.button.y);
+						x=fromscreen(e.button.x-sh/2.0);
+						y=fromscreen(sh/2.0-e.button.y);
 
 						rot(y,0,&y,&z,-rot_x);
 						rot(x,z,&x,&z,-rot_y);
 
 						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 					} else {
-						if(e.button.x>=600) {
-							if(e.button.y>=400) {
+						if(e.button.x>=sh) {
+							if(e.button.y>=2*sh/3.0) {
 								rot_x=rot_x+M_PI/2;
 								rot_y=rot_y+M_PI/2;
-							} else if(e.button.y>=200) {
+							} else if(e.button.y>=sh/3.0) {
 								rot_x=0;
 								rot_y=0;
 							} else {
@@ -567,18 +571,19 @@ int main(int argc, char *argv[]) {
 						move(rx,ry,rz);
 					}
 				} else if(e.motion.state&SDL_BUTTON(2)) {
-					rot_y+=(((float)e.motion.xrel)/(sw()/4))*M_PI;
-					rot_x+=(((float)e.motion.yrel)/(sh()/4))*M_PI;
+					rot_y+=(((float)e.motion.xrel)/(sw/4))*M_PI;
+					rot_x+=(((float)e.motion.yrel)/(sh/4))*M_PI;
 				}
 			}
 		}
 
 
+		int sh3=sh/3;
 		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		gldraw(0,0,600,600,rot_x,rot_y);
-		gldraw(600,0,200,200,rot_x+M_PI/2,rot_y+M_PI/2);
-		gldraw(600,200,200,200,0,0);
-		gldraw(600,400,200,200,0,M_PI/2);
+		gldraw(0,0,sh,sh,rot_x,rot_y);
+		gldraw(sh,0,sh3,sh3,rot_x+M_PI/2,rot_y+M_PI/2);
+		gldraw(sh,sh3,sh3,sh3,0,0);
+		gldraw(sh,2*sh3,sh3,sh3,0,M_PI/2);
 		SDL_GL_SwapBuffers();
 	}
 end:	SDL_Quit();
