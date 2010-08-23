@@ -571,6 +571,40 @@ void save() {
 	fclose(f);
 }
 
+
+
+void change_view(int x,int y,int b) {
+	float r=(b==SDL_BUTTON_RIGHT)?M_PI:0;
+
+	if(y>=2*sh/3.0) {
+		rot_x=rot_x+M_PI/2;
+		rot_y=rot_y+M_PI/2+r;
+	} else if(y>=sh/3.0) {
+		rot_x=0;
+		rot_y=r;
+	} else {
+		rot_x=0;
+		rot_y=M_PI/2+r;
+	}
+}
+
+void click(int x,int y) {
+	if(SDL_GetModState()&KMOD_CTRL) {
+		struct point *p=point+pointn++;
+
+		float x,y,z;
+		x=fromscreen(x-sh/2.0);
+		y=fromscreen(sh/2.0-y);
+
+		rot(y,0,&y,&z,-rot_x);
+		rot(x,z,&x,&z,-rot_y);
+
+		p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
+	} else {
+		select_point(x,y);
+	}
+}
+
 int main(int argc, char *argv[]) {
 	name=argv[1];
 	if(argc==2) load();
@@ -604,38 +638,13 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			if(e.type==SDL_MOUSEBUTTONDOWN) {
-				if(e.button.button==SDL_BUTTON_LEFT) {
-					if(SDL_GetModState()&KMOD_CTRL) {
-						struct point *p=point+pointn++;
-
-						float x,y,z;
-						x=fromscreen(e.button.x-sh/2.0);
-						y=fromscreen(sh/2.0-e.button.y);
-
-						rot(y,0,&y,&z,-rot_x);
-						rot(x,z,&x,&z,-rot_y);
-
-						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
-					} else if(!(SDL_GetModState()&KMOD_SHIFT)) {
-						if(e.button.x>=sh) {
-							if(e.button.y>=2*sh/3.0) {
-								rot_x=rot_x+M_PI/2;
-								rot_y=rot_y+M_PI/2;
-							} else if(e.button.y>=sh/3.0) {
-								rot_x=0;
-								rot_y=0;
-							} else {
-								rot_x=0;
-								rot_y=M_PI/2;
-							}
-							
-						} else {
-							select_point(e.button.x,e.button.y);
-						}
-					}
+				if(e.button.x>=sh) {
+					change_view(e.button.x,e.button.y,e.button.button);
+				} else {
+					if(e.button.button==SDL_BUTTON_LEFT) click(e.button.x,e.button.y);
+					if(e.button.button==SDL_BUTTON_WHEELDOWN) { scale/=1.5; }
+					if(e.button.button==SDL_BUTTON_WHEELUP) { scale*=1.5; }
 				}
-				if(e.button.button==SDL_BUTTON_WHEELDOWN) { scale/=1.5; }
-				if(e.button.button==SDL_BUTTON_WHEELUP) { scale*=1.5; }
 			}
 			if(e.type==SDL_MOUSEMOTION) {
 				if(SDL_GetModState()&KMOD_SHIFT) {
