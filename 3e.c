@@ -152,7 +152,7 @@ void delete() {
 }
 
 
-void select_triangle(int sx,int sy) {
+int find_triangle(int sx,int sy) {
 	float x,y;
 	x=(sx-(sh/2))/(sh/2.0);
 	y=-(sy-sh/2)/(sh/2.0);
@@ -185,7 +185,11 @@ void select_triangle(int sx,int sy) {
 			if(zv<z) { n=i; z=zv; }
 		}
 	}
+	return n;
+}
 
+void select_triangle(int sx,int sy) {
+	int n=find_triangle(sx,sy);
 	if(n>=0) {
 		struct tri *t=tri+n;
 
@@ -323,7 +327,7 @@ const char *fshader[1]={
 			"vec3 l2=normalize(vec3(1,-1,-1));"
 			"float df=clamp(dot(n,l), 0.0, 1.0);"
 			"float df2=clamp(dot(n,l2), 0.0, 1.0);"
-			"gl_FragColor=coloro*0.25 + 0.50*coloro*df + 0.25*df2;"
+			"gl_FragColor=vec4(coloro.rgb*(0.25 + 0.50*df + 0.25*df2),coloro.a);"
 		"} else {"
 			"gl_FragColor=coloro;"
 		"}"
@@ -406,7 +410,10 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	int mx,my;
 	SDL_GetMouseState(&mx,&my);
 
-	int sp=find_point(mx,my);
+	int sp=find_point(mx,my), st=-1;
+	if(sp<0) {
+		st=find_triangle(mx,my);
+	}
 
 
 	glViewport(x,y,w,h);
@@ -430,7 +437,11 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 		normal(tri[i].v,&x,&y,&z);
 
 		glUniform3f(sh_normal,x,y,z);
-		glUniform4f(sh_color,1,1,1,1);
+		if(i==st) {
+			glUniform4f(sh_color,1,0,0,1);
+		} else {
+			glUniform4f(sh_color,1,1,1,1);
+		}
 		glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 	}
 
