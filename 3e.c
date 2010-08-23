@@ -152,7 +152,11 @@ void delete() {
 }
 
 
-void select_triangle(float x,float y) {
+void select_triangle(int sx,int sy) {
+	float x,y;
+	x=(sx-(sh/2))/(sh/2.0);
+	y=-(sy-sh/2)/(sh/2.0);
+
 	int i;
 	int n=-1;
 	float z=INFINITY;
@@ -193,9 +197,8 @@ void select_triangle(float x,float y) {
 	}
 }
 
-void select_point(int x,int y) {
+int find_point(int x,int y) {
 	float fx,fy;
-
 	fx=(x-(sh/2))/(sh/2.0);
 	fy=-(y-sh/2)/(sh/2.0);
 	float ps=10.0/sh;
@@ -211,9 +214,13 @@ void select_point(int x,int y) {
 			n=i; z=sz;
 		}
 	}
+	return n;
+}
 
+void select_point(int x,int y) {
+	int n=find_point(x,y);
 	if(n>=0) point[n].sel=!point[n].sel;
-	else select_triangle(fx,fy);
+	else select_triangle(x,y);
 }
 
 void deselectall() {
@@ -396,6 +403,12 @@ void normal(GLuint v[3],float *x,float *y,float *z) {
 }
 
 void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
+	int mx,my;
+	SDL_GetMouseState(&mx,&my);
+
+	int sp=find_point(mx,my);
+
+
 	glViewport(x,y,w,h);
 
 	bounds();
@@ -434,11 +447,16 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
 		if(p->sel&2) continue;
-		if(p->sel) {
+		if(p->sel || i==sp) {
 			glEnd();
 			glDisable(GL_DEPTH_TEST);
 			glLineWidth(3);
-			glUniform4f(sh_color,0,1,0,1);
+			if(i==sp) {
+				glUniform4f(sh_color,1,0,0,1);
+			} else {
+				glUniform4f(sh_color,0,1,0,1);
+			}
+		
 			lines*=3;
 			glBegin(GL_LINES);
 			glVertex3f(p->x-lines,p->y,p->z);
