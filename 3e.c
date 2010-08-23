@@ -150,6 +150,44 @@ void delete() {
 	}
 }
 
+
+void select_triangle(float x,float y) {
+	int i;
+	int n=-1;
+	float z=INFINITY;
+	for(i=0;i<trin;i++) {
+		struct tri *t=tri+i;
+		float x0,y0,z0;
+		float x1,y1,z1;
+		float x2,y2,z2;
+
+		transform(point[t->v[0]].x,point[t->v[0]].y,point[t->v[0]].z,&x0,&y0,&z0);
+		transform(point[t->v[1]].x,point[t->v[1]].y,point[t->v[1]].z,&x1,&y1,&z1);
+		transform(point[t->v[2]].x,point[t->v[2]].y,point[t->v[2]].z,&x2,&y2,&z2);
+
+		x1-=x0; y1-=y0; z1-=z0;
+		x2-=x0; y2-=y0; z2-=z0;
+		x0=x-x0; y0=y-y0;
+
+		float d=x1*y2-y1*x2;
+
+		float a=(x0*y2-y0*x2)/d;
+		float b=-(x0*y1-y0*x1)/d;
+
+		if(a>0 && b>0 && (a+b)<1) {
+			float zv=z0+a*z2+b*z1;
+			if(zv<z) { n=i; z=zv; }
+		}
+	}
+
+	if(n>=0) {
+		struct tri *t=tri+n;
+		point[t->v[0]].sel=!point[t->v[0]].sel;
+		point[t->v[1]].sel=!point[t->v[1]].sel;
+		point[t->v[2]].sel=!point[t->v[2]].sel;
+	}
+}
+
 void select_point(int x,int y) {
 	float fx,fy;
 
@@ -170,6 +208,7 @@ void select_point(int x,int y) {
 	}
 
 	if(n>=0) point[n].sel=!point[n].sel;
+	else select_triangle(fx,fy);
 }
 
 void deselectall() {
