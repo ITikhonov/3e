@@ -280,7 +280,6 @@ const char *vshader[1] = {
         "uniform vec4 color;"
         "uniform vec3 normal;"
         "uniform vec3 center;"
-        "varying vec4 coloro;"
         "varying vec3 normalo;"
 
 
@@ -305,7 +304,6 @@ const char *vshader[1] = {
 
         "void main(){"
                 "vec3 p=transform(gl_Vertex.xyz);"
-		"coloro=color;"
 		"if(length(normal)>0) {"
 			"normalo=transform(normal);"
 			"p.z-=0.0001;"
@@ -317,19 +315,22 @@ const char *vshader[1] = {
 };
 
 const char *fshader[1]={
-        "varying vec4 coloro;"
+        "uniform float time;"
+        "uniform vec4 color;"
         "varying vec3 normalo;"
+	"const float pi=3.14159265358979323846;"
         "void main(){"
 		"if(length(normalo)>0) {"
+			"float dt=cos(2*pi*fract(float(time)/10000.0));"
 			"vec3 n=normalize(normalo);"
 			"if(n.z>0) n*=-1;"
-			"vec3 l=normalize(vec3(1,1,-1));"
-			"vec3 l2=normalize(vec3(1,-1,-1));"
+			"vec3 l=normalize(vec3(1-dt,1-dt,-1));"
+			"vec3 l2=normalize(vec3(1+dt,-1+dt,-1));"
 			"float df=clamp(dot(n,l), 0.0, 1.0);"
 			"float df2=clamp(dot(n,l2), 0.0, 1.0);"
-			"gl_FragColor=vec4(coloro.rgb*(0.25 + 0.50*df + 0.25*df2),coloro.a);"
+			"gl_FragColor=vec4(color.rgb*(0.25 + 0.50*df + 0.25*df2),color.a);"
 		"} else {"
-			"gl_FragColor=coloro;"
+			"gl_FragColor=color;"
 		"}"
         "}" };
 
@@ -341,6 +342,7 @@ GLint sh_zshift;
 GLint sh_normal;
 GLint sh_color;
 GLint sh_center;
+GLint sh_time;
 
 void initgl() {
 	glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
@@ -389,6 +391,7 @@ void initgl() {
 	sh_color=glGetUniformLocation(p,"color");
 	sh_normal=glGetUniformLocation(p,"normal");
 	sh_center=glGetUniformLocation(p,"center");
+	sh_time=glGetUniformLocation(p,"time");
 
 	glUseProgram(p);
 }
@@ -425,6 +428,7 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	glUniform1f(sh_scale,scale);
 	glUniform2f(sh_zshift,zshift[0],zshift[1]);
 	glUniform3f(sh_center,vx,vy,vz);
+	glUniform1f(sh_time,SDL_GetTicks());
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glPointSize(5);
