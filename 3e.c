@@ -157,6 +157,7 @@ void select_triangle(float x,float y) {
 	float z=INFINITY;
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
+		if(t->v[0]==-1) continue;
 		float x0,y0,z0;
 		float x1,y1,z1;
 		float x2,y2,z2;
