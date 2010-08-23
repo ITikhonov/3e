@@ -137,6 +137,7 @@ void delete() {
 	int i;
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
+		if(t->v[0]==-1) continue;
 		point[t->v[0]].sel|=0x100;
 		point[t->v[1]].sel|=0x100;
 		point[t->v[2]].sel|=0x100;
@@ -183,9 +184,12 @@ void select_triangle(float x,float y) {
 
 	if(n>=0) {
 		struct tri *t=tri+n;
-		point[t->v[0]].sel=!point[t->v[0]].sel;
-		point[t->v[1]].sel=!point[t->v[1]].sel;
-		point[t->v[2]].sel=!point[t->v[2]].sel;
+
+		if(point[t->v[0]].sel && point[t->v[1]].sel && point[t->v[2]].sel) {
+			point[t->v[0]].sel=point[t->v[1]].sel=point[t->v[2]].sel=0;
+		} else {
+			point[t->v[0]].sel=point[t->v[1]].sel=point[t->v[2]].sel=1;
+		}
 	}
 }
 
@@ -194,7 +198,7 @@ void select_point(int x,int y) {
 
 	fx=(x-(sh/2))/(sh/2.0);
 	fy=-(y-sh/2)/(sh/2.0);
-	float ps=5.0/sh;
+	float ps=10.0/sh;
 
 
 	int i,z=INT_MIN,n=-1;
@@ -307,6 +311,7 @@ const char *fshader[1]={
         "void main(){"
 		"if(length(normalo)>0) {"
 			"vec3 n=normalize(normalo);"
+			"if(n.z>0) n*=-1;"
 			"vec3 l=normalize(vec3(1,1,-1));"
 			"vec3 l2=normalize(vec3(1,-1,-1));"
 			"float df=clamp(dot(n,l), 0.0, 1.0);"
@@ -582,7 +587,7 @@ int main(int argc, char *argv[]) {
 						rot(x,z,&x,&z,-rot_y);
 
 						p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
-					} else {
+					} else if(!(SDL_GetModState()&KMOD_SHIFT)) {
 						if(e.button.x>=sh) {
 							if(e.button.y>=2*sh/3.0) {
 								rot_x=rot_x+M_PI/2;
