@@ -609,6 +609,32 @@ void click(int sx,int sy) {
 	}
 }
 
+int drag_x=-1,drag_y=-1;
+
+void rect_select(int x,int y) {
+	float fx,fy;
+	fx=(x-(sh/2))/(sh/2.0);
+	fy=-(y-sh/2)/(sh/2.0);
+
+	float dx,dy;
+	dx=(drag_x-(sh/2))/(sh/2.0);
+	dy=-(drag_y-sh/2)/(sh/2.0);
+
+	fx-=dx; fy-=dy;
+
+
+	int i;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(p->sel&2) continue;
+		float sx,sy,sz;
+		transform(p->x,p->y,p->z,&sx,&sy,&sz);
+		sx-=dx; sy-=dy;
+		sx/=fx; sy/=fy;
+		if(sx>0 && sx<1 && sy>0 && sy<1) { p->sel=1; }
+	}
+}
+
 int main(int argc, char *argv[]) {
 	name=argv[1];
 	if(argc==2) load();
@@ -640,7 +666,16 @@ int main(int argc, char *argv[]) {
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
+				if(e.key.keysym.sym==SDLK_LALT) {
+					SDL_GetMouseState(&drag_x,&drag_y);
+				}
 			}
+			if(e.type==SDL_KEYUP) {
+				if(e.key.keysym.sym==SDLK_LALT) {
+					drag_x=drag_y=-1;
+				}
+			}
+
 			if(e.type==SDL_MOUSEBUTTONDOWN) {
 				if(e.button.x>=sh) {
 					change_view(e.button.x,e.button.y,e.button.button);
@@ -651,6 +686,9 @@ int main(int argc, char *argv[]) {
 				}
 			}
 			if(e.type==SDL_MOUSEMOTION) {
+				if(drag_x>=0) {
+					rect_select(e.motion.x,e.motion.y);
+				}
 				if(SDL_GetModState()&KMOD_SHIFT) {
 					if(e.motion.state&SDL_BUTTON(1)) {
 						float rx,ry,rz;
