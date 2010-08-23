@@ -577,7 +577,7 @@ void change_view(int x,int y,int b) {
 	float r=(b==SDL_BUTTON_RIGHT)?M_PI:0;
 
 	if(y>=2*sh/3.0) {
-		rot_x=rot_x+M_PI/2;
+		rot_x=rot_x+M_PI/2+r;
 		rot_y=rot_y+M_PI/2+r;
 	} else if(y>=sh/3.0) {
 		rot_x=0;
@@ -588,20 +588,20 @@ void change_view(int x,int y,int b) {
 	}
 }
 
-void click(int x,int y) {
+void click(int sx,int sy) {
 	if(SDL_GetModState()&KMOD_CTRL) {
 		struct point *p=point+pointn++;
 
 		float x,y,z;
-		x=fromscreen(x-sh/2.0);
-		y=fromscreen(sh/2.0-y);
+		x=fromscreen(sx-sh/2.0);
+		y=fromscreen(sh/2.0-sy);
 
 		rot(y,0,&y,&z,-rot_x);
 		rot(x,z,&x,&z,-rot_y);
 
 		p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 	} else {
-		select_point(x,y);
+		select_point(sx,sy);
 	}
 }
 
