@@ -250,9 +250,9 @@ void deletetriangle() {
 void triangle() {
 	struct tri *t=tri+trin;
 	int i=pointn-1,j=0;
-	for(;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
-	for(i--;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
-	for(i--;i>=0;i--) { if(point[i].sel) { t->v[j++]=i; break; } }
+	for(;i>=0;i--) { if(point[i].sel==1) { t->v[j++]=i; break; } }
+	for(i--;i>=0;i--) { if(point[i].sel==1) { t->v[j++]=i; break; } }
+	for(i--;i>=0;i--) { if(point[i].sel==1) { t->v[j++]=i; break; } }
 
 	if(j==3) trin++;
 }
