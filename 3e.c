@@ -612,7 +612,7 @@ void click(int sx,int sy) {
 
 int drag_x=-1,drag_y=-1;
 
-void rect_select(int x,int y) {
+void rect_select(int x,int y,int state) {
 	float fx,fy;
 	fx=(x-(sh/2))/(sh/2.0);
 	fy=-(y-sh/2)/(sh/2.0);
@@ -632,7 +632,7 @@ void rect_select(int x,int y) {
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		sx-=dx; sy-=dy;
 		sx/=fx; sy/=fy;
-		if(sx>0 && sx<1 && sy>0 && sy<1) { p->sel=1; }
+		if(sx>0 && sx<1 && sy>0 && sy<1) { p->sel=state; }
 	}
 }
 
@@ -688,7 +688,7 @@ int main(int argc, char *argv[]) {
 			}
 			if(e.type==SDL_MOUSEMOTION) {
 				if(drag_x>=0) {
-					rect_select(e.motion.x,e.motion.y);
+					rect_select(e.motion.x,e.motion.y,(SDL_GetModState()&KMOD_CTRL)?0:1);
 				}
 				if(SDL_GetModState()&KMOD_SHIFT) {
 					if(e.motion.state&SDL_BUTTON(1)) {
