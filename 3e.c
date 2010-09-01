@@ -605,7 +605,9 @@ void click(int sx,int sy) {
 
 		p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
 	} else {
-		select_point(sx,sy);
+		if(!(SDL_GetModState()&KMOD_SHIFT)) {
+			select_point(sx,sy);
+		}
 	}
 }
 
