@@ -557,7 +557,6 @@ void save() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		int32_t c[4]={sizeof(uint32_t[3]),p->x,p->y,p->z};
 		fwrite(c,sizeof(c),1,f);
 		
