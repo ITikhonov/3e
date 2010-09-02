@@ -656,7 +656,7 @@ void click(int sx,int sy) {
 
 int drag_x=-1,drag_y=-1;
 
-void rect_select(int x,int y,int state) {
+void rect_select(int x,int y,int select,int andhidden) {
 	float fx,fy;
 	fx=(x-(sh/2))/(sh/2.0);
 	fy=-(y-sh/2)/(sh/2.0);
@@ -671,11 +671,14 @@ void rect_select(int x,int y,int state) {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(!andhidden && p->state==HIDDEN) continue;
 		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		sx-=dx; sy-=dy;
 		sx/=fx; sy/=fy;
-		if(sx>0 && sx<1 && sy>0 && sy<1) { if(p->state!=HIDDEN) p->state=state; }
+		if(sx>0 && sx<1 && sy>0 && sy<1) {
+			 p->state=select?SELECTED:NORMAL;
+		}
 	}
 }
 
@@ -731,7 +734,7 @@ int main(int argc, char *argv[]) {
 			}
 			if(e.type==SDL_MOUSEMOTION) {
 				if(drag_x>=0) {
-					rect_select(e.motion.x,e.motion.y,(SDL_GetModState()&KMOD_CTRL)?0:1);
+					rect_select(e.motion.x,e.motion.y,(SDL_GetModState()&KMOD_CTRL)?0:1,(SDL_GetModState()&KMOD_SHIFT)?1:0);
 				}
 				if(SDL_GetModState()&KMOD_SHIFT) {
 					if(e.motion.state&SDL_BUTTON(1)) {
