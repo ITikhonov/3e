@@ -523,10 +523,10 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 			glVertex3f(p->x,p->y,p->z+lines);
 			glEnd();
 			lines/=3;
-			glLineWidth(2);
 			glEnable(GL_DEPTH_TEST);
 		}
 
+		glLineWidth(2);
 		glBegin(GL_LINES);
 		glVertex3f(p->x-lines,p->y,p->z);
 		glVertex3f(p->x+lines,p->y,p->z);
