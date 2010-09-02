@@ -472,13 +472,22 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 		float x,y,z;
 		normal(tri[i].v,&x,&y,&z);
 
-		glUniform3f(sh_normal,x,y,z);
-		if(i==st) {
+		if(ishidden(&point[tri[i].v[0]]) || ishidden(&point[tri[i].v[1]]) || ishidden(&point[tri[i].v[2]])) {
+			glUniform4f(sh_color,0.8,0.8,0.8,1);
+			glUniform3f(sh_normal,0,0,0);
+			
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		} else if(i==st) {
+			glUniform3f(sh_normal,x,y,z);
 			glUniform4f(sh_color,1,0,0,1);
+			glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 		} else {
+			glUniform3f(sh_normal,x,y,z);
 			glUniform4f(sh_color,1,1,1,1);
+			glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 		}
-		glDrawElements(GL_TRIANGLES,3, GL_UNSIGNED_INT, tri[i].v);
 	}
 
 	glUniform3f(sh_normal,0,0,0);
