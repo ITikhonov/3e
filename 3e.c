@@ -246,7 +246,8 @@ int find_point(int x,int y) {
 		struct point *p=point+i;
 		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
-		if(fabsf(fx-sx)<ps && fabsf(fy-sy)<ps && sz>z) {
+		int k=p->state==SELECTED?2:1;
+		if(fabsf(fx-sx)<(ps*k) && fabsf(fy-sy)<(k*ps) && sz>z) {
 			n=i; z=sz;
 		}
 	}
