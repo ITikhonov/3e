@@ -76,6 +76,15 @@ int mxx,mxy,mxz;
 int mnx,mny,mnz;
 float sx,sy,sz;
 
+
+int issel(struct point *p) {
+	return p->sel&1;
+}
+
+int ishidden(struct point *p) {
+	return p->sel&0x10;
+}
+
 void bounds() {
 	mxx=mxy=mxz=INT_MIN;
 	mnx=mny=mnz=INT_MAX;
@@ -85,7 +94,6 @@ void bounds() {
 		int i,n=0;
 		for(i=0;i<pointn;i++) {
 			struct point *p=point+i;
-			if(p->sel&2) continue;
 			n++;
 			sx=(sx/n)*(n-1)+ p->x/(float)n;
 			sy=(sy/n)*(n-1)+ p->y/(float)n;
@@ -122,7 +130,6 @@ void focuscenter() {
 	int i,n=0;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		if(p->sel) {
  			n++;
 			sx=(sx/n)*(n-1)+ p->x/(float)n;
@@ -131,6 +138,26 @@ void focuscenter() {
 		}
 	}
 	vx=sx; vy=sy; vz=sz;
+}
+
+void only() {
+	int i;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if(p->sel==1) { p->sel=0x11; ; }
+	}
+}
+
+void delete_one(int n) {
+	point[n]=point[--pointn];
+	int i;
+	for(i=0;i<trin;i++) {
+		struct tri *t=tri+i;
+		if(t->v[0]==-1) continue;
+		if(t->v[0]==pointn) t->v[0]=n;
+		if(t->v[1]==pointn) t->v[1]=n;
+		if(t->v[2]==pointn) t->v[2]=n;
+	}
 }
 
 void delete() {
@@ -145,9 +172,8 @@ void delete() {
 
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		if(p->sel&0x100) { p->sel&=~0x100; continue; }
-		if(p->sel) { p->sel|=2; }
+		if(p->sel) { delete_one(i--); }
 	}
 }
 
@@ -211,7 +237,6 @@ int find_point(int x,int y) {
 	int i,z=INT_MIN,n=-1;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		if(fabsf(fx-sx)<ps && fabsf(fy-sy)<ps && sz>z) {
@@ -231,7 +256,6 @@ void deselectall() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
  		p->sel=0;
 	}
 }
@@ -263,7 +287,6 @@ void move(int dx,int dy,int dz) {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		if(p->sel) {
 			p->x+=dx;
 			p->y+=dy;
@@ -461,7 +484,6 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	int lines=0.025/scale;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		if(p->sel || i==sp) {
 			glEnd();
 			glDisable(GL_DEPTH_TEST);
@@ -627,7 +649,6 @@ void rect_select(int x,int y,int state) {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&2) continue;
 		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		sx-=dx; sy-=dy;
@@ -664,6 +685,7 @@ int main(int argc, char *argv[]) {
 				if(e.key.keysym.sym==SDLK_c) { focuscenter(); }
 				if(e.key.keysym.sym==SDLK_s) { save(); }
 				if(e.key.keysym.sym==SDLK_r) { delete(); }
+				if(e.key.keysym.sym==SDLK_o) { only(); }
 				if(e.key.keysym.sym==SDLK_a) {
 					if(++style==3) style=0;
 				}
