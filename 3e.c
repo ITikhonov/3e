@@ -18,8 +18,12 @@
 
 SDL_Surface *screen;
 
+enum state {NORMAL,SELECTED,HIDDEN};
+
 struct point {
-	GLint x,y,z,sel;
+	GLint x,y,z;
+	unsigned int state:2;
+	unsigned int mark:1;
 } point[102400];
 
 struct tri {
@@ -76,15 +80,6 @@ int mxx,mxy,mxz;
 int mnx,mny,mnz;
 float sx,sy,sz;
 
-
-int issel(struct point *p) {
-	return p->sel&1;
-}
-
-int ishidden(struct point *p) {
-	return p->sel&0x10;
-}
-
 void bounds() {
 	mxx=mxy=mxz=INT_MIN;
 	mnx=mny=mnz=INT_MAX;
@@ -130,7 +125,7 @@ void focuscenter() {
 	int i,n=0;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel) {
+		if(p->state==SELECTED) {
  			n++;
 			sx=(sx/n)*(n-1)+ p->x/(float)n;
 			sy=(sy/n)*(n-1)+ p->y/(float)n;
@@ -144,16 +139,19 @@ void all() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		p->sel&=~(0x10);
+		if(p->state==HIDDEN) p->state=NORMAL;
 	}
 }
 
-void only(int what) {
-	what=!!what;
+void only(int selected) {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if((!!issel(p)) != what) { p->sel=0x10; }
+		if(selected) {
+			if(p->state != SELECTED) { p->state=HIDDEN; }
+		} else {
+			if(p->state == SELECTED) { p->state=HIDDEN; }
+		}
 	}
 }
 
@@ -174,15 +172,15 @@ void delete() {
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
 		if(t->v[0]==-1) continue;
-		point[t->v[0]].sel|=0x100;
-		point[t->v[1]].sel|=0x100;
-		point[t->v[2]].sel|=0x100;
+		point[t->v[0]].mark=1;
+		point[t->v[1]].mark=1;
+		point[t->v[2]].mark=1;
 	}
 
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel&0x100) { p->sel&=~0x100; continue; }
-		if(p->sel) { delete_one(i--); }
+		if(p->mark) { p->mark=0; continue; }
+		if(p->state==SELECTED) { delete_one(i--); }
 	}
 }
 
@@ -228,10 +226,10 @@ void select_triangle(int sx,int sy) {
 	if(n>=0) {
 		struct tri *t=tri+n;
 
-		if(point[t->v[0]].sel && point[t->v[1]].sel && point[t->v[2]].sel) {
-			point[t->v[0]].sel=point[t->v[1]].sel=point[t->v[2]].sel=0;
-		} else {
-			point[t->v[0]].sel=point[t->v[1]].sel=point[t->v[2]].sel=1;
+		if(point[t->v[0]].state==SELECTED && point[t->v[1]].state==SELECTED && point[t->v[2]].state==SELECTED) {
+			point[t->v[0]].state=point[t->v[1]].state=point[t->v[2]].state=NORMAL;
+		} else if(point[t->v[0]].state==NORMAL && point[t->v[1]].state==NORMAL && point[t->v[2]].state==NORMAL) {
+			point[t->v[0]].state=point[t->v[1]].state=point[t->v[2]].state=SELECTED;
 		}
 	}
 }
@@ -257,15 +255,17 @@ int find_point(int x,int y) {
 
 void select_point(int x,int y) {
 	int n=find_point(x,y);
-	if(n>=0) point[n].sel=!point[n].sel;
-	else select_triangle(x,y);
+	if(n>=0) {
+		if(point[n].state==NORMAL) point[n].state=SELECTED;
+		else if(point[n].state==SELECTED) point[n].state=NORMAL;
+	} else select_triangle(x,y);
 }
 
 void deselectall() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
- 		p->sel&=~0x1;
+ 		if(p->state==SELECTED) p->state=NORMAL;
 	}
 }
 
@@ -274,7 +274,7 @@ void deletetriangle() {
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
 		if(t->v[0]==-1) continue;
-		if(point[t->v[0]].sel && point[t->v[1]].sel && point[t->v[2]].sel) {
+		if(point[t->v[0]].state==SELECTED && point[t->v[1]].state==SELECTED && point[t->v[2]].state==SELECTED) {
 			t->v[0]=-1;
 		}
 	}
@@ -283,9 +283,9 @@ void deletetriangle() {
 void triangle() {
 	struct tri *t=tri+trin;
 	int i=pointn-1,j=0;
-	for(;i>=0;i--) { if(point[i].sel==1) { t->v[j++]=i; break; } }
-	for(i--;i>=0;i--) { if(point[i].sel==1) { t->v[j++]=i; break; } }
-	for(i--;i>=0;i--) { if(point[i].sel==1) { t->v[j++]=i; break; } }
+	for(;i>=0;i--) { if(point[i].state==SELECTED) { t->v[j++]=i; break; } }
+	for(i--;i>=0;i--) { if(point[i].state==SELECTED) { t->v[j++]=i; break; } }
+	for(i--;i>=0;i--) { if(point[i].state==SELECTED) { t->v[j++]=i; break; } }
 
 	if(j==3) trin++;
 }
@@ -296,7 +296,7 @@ void move(int dx,int dy,int dz) {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel) {
+		if(p->state==SELECTED) {
 			p->x+=dx;
 			p->y+=dy;
 			p->z+=dz;
@@ -472,7 +472,7 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 		float x,y,z;
 		normal(tri[i].v,&x,&y,&z);
 
-		if(ishidden(&point[tri[i].v[0]]) || ishidden(&point[tri[i].v[1]]) || ishidden(&point[tri[i].v[2]])) {
+		if(point[tri[i].v[0]].state==HIDDEN || point[tri[i].v[1]].state==HIDDEN || point[tri[i].v[2]].state==HIDDEN) {
 			glUniform4f(sh_color,0.8,0.8,0.8,1);
 			glUniform3f(sh_normal,0,0,0);
 			
@@ -501,9 +501,9 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
 		glUniform4f(sh_color,0,0,0,1);
-		if(ishidden(p)) {
+		if(p->state==HIDDEN) {
 			glUniform4f(sh_color,0.8,0.8,0.8,1);
-		} else if(issel(p) || i==sp) {
+		} else if(p->state==SELECTED || i==sp) {
 			glDisable(GL_DEPTH_TEST);
 			glLineWidth(3);
 			if(i==sp) {
@@ -551,7 +551,10 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
 		if(t->v[0]==-1) continue;
-		int c=issel(&point[t->v[0]]) + issel(&point[t->v[1]]) + issel(&point[t->v[2]]);
+		int c=0;
+		if(point[t->v[0]].state==SELECTED) c++;
+		if(point[t->v[1]].state==SELECTED) c++;
+		if(point[t->v[2]].state==SELECTED) c++;
 		if(c>0) {
 			switch(c) {
 			case 1:	glUniform4f(sh_color,1,1,1,1); break;
@@ -643,7 +646,7 @@ void click(int sx,int sy) {
 		rot(y,0,&y,&z,-rot_x);
 		rot(x,z,&x,&z,-rot_y);
 
-		p->x=x+vx; p->y=y+vy; p->z=z+vz; p->sel=1;
+		p->x=x+vx; p->y=y+vy; p->z=z+vz; if(p->state==NORMAL) p->state=SELECTED;
 	} else {
 		if(!(SDL_GetModState()&KMOD_SHIFT)) {
 			select_point(sx,sy);
@@ -672,7 +675,7 @@ void rect_select(int x,int y,int state) {
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		sx-=dx; sy-=dy;
 		sx/=fx; sy/=fy;
-		if(sx>0 && sx<1 && sy>0 && sy<1) { p->sel=state; }
+		if(sx>0 && sx<1 && sy>0 && sy<1) { if(p->state!=HIDDEN) p->state=state; }
 	}
 }
 
