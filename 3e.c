@@ -140,11 +140,20 @@ void focuscenter() {
 	vx=sx; vy=sy; vz=sz;
 }
 
-void only() {
+void all() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel==1) { p->sel=0x11; ; }
+		p->sel&=~(0x10);
+	}
+}
+
+void only(int what) {
+	what=!!what;
+	int i;
+	for(i=0;i<pointn;i++) {
+		struct point *p=point+i;
+		if((!!issel(p)) != what) { p->sel=0x10; }
 	}
 }
 
@@ -256,7 +265,7 @@ void deselectall() {
 	int i;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
- 		p->sel=0;
+ 		p->sel&=~0x1;
 	}
 }
 
@@ -479,13 +488,13 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 
 	glPointSize(10);
 	glLineWidth(2);
-	glUniform4f(sh_color,0,0,0,1);
-	glBegin(GL_LINES);
 	int lines=0.025/scale;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
-		if(p->sel || i==sp) {
-			glEnd();
+		glUniform4f(sh_color,0,0,0,1);
+		if(ishidden(p)) {
+			glUniform4f(sh_color,0.8,0.8,0.8,1);
+		} else if(issel(p) || i==sp) {
 			glDisable(GL_DEPTH_TEST);
 			glLineWidth(3);
 			if(i==sp) {
@@ -504,17 +513,18 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 			glVertex3f(p->x,p->y,p->z+lines);
 			glEnd();
 			lines/=3;
-			glUniform4f(sh_color,0,0,0,1);
 			glLineWidth(2);
 			glEnable(GL_DEPTH_TEST);
-			glBegin(GL_LINES);
 		}
+
+		glBegin(GL_LINES);
 		glVertex3f(p->x-lines,p->y,p->z);
 		glVertex3f(p->x+lines,p->y,p->z);
 		glVertex3f(p->x,p->y-lines,p->z);
 		glVertex3f(p->x,p->y+lines,p->z);
 		glVertex3f(p->x,p->y,p->z-lines);
 		glVertex3f(p->x,p->y,p->z+lines);
+		glEnd();
 
 	}
 	glEnd();
@@ -532,7 +542,7 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	for(i=0;i<trin;i++) {
 		struct tri *t=tri+i;
 		if(t->v[0]==-1) continue;
-		int c=point[t->v[0]].sel + point[t->v[1]].sel + point[t->v[2]].sel;
+		int c=issel(&point[t->v[0]]) + issel(&point[t->v[1]]) + issel(&point[t->v[2]]);
 		if(c>0) {
 			switch(c) {
 			case 1:	glUniform4f(sh_color,1,1,1,1); break;
@@ -685,10 +695,9 @@ int main(int argc, char *argv[]) {
 				if(e.key.keysym.sym==SDLK_c) { focuscenter(); }
 				if(e.key.keysym.sym==SDLK_s) { save(); }
 				if(e.key.keysym.sym==SDLK_r) { delete(); }
-				if(e.key.keysym.sym==SDLK_o) { only(); }
-				if(e.key.keysym.sym==SDLK_a) {
-					if(++style==3) style=0;
-				}
+				if(e.key.keysym.sym==SDLK_o) { only(1); }
+				if(e.key.keysym.sym==SDLK_h) { only(0); }
+				if(e.key.keysym.sym==SDLK_a) { all(); }
 				if(e.key.keysym.sym==SDLK_LALT) {
 					SDL_GetMouseState(&drag_x,&drag_y);
 				}
