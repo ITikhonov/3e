@@ -467,6 +467,7 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 	glPointSize(5);
 	glVertexPointer(3, GL_INT, sizeof(struct point), point);
 
+	glLineWidth(2);
 	int i;
 	for(i=0;i<trin;i++) {
 		if(tri[i].v[0]==-1) continue;
