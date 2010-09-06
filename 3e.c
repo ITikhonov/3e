@@ -244,6 +244,7 @@ int find_point(int x,int y) {
 	int i,z=INT_MIN,n=-1;
 	for(i=0;i<pointn;i++) {
 		struct point *p=point+i;
+		if(p->state==HIDDEN) continue;
 		float sx,sy,sz;
 		transform(p->x,p->y,p->z,&sx,&sy,&sz);
 		int k=p->state==SELECTED?2:1;
