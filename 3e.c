@@ -18,6 +18,8 @@
 
 SDL_Surface *screen;
 
+int view=0;
+
 enum state {NORMAL,SELECTED,HIDDEN};
 
 struct point {
@@ -498,6 +500,8 @@ void gldraw(int x, int y, int w, int h, float rot_x, float rot_y) {
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 
+	if(view) return;
+
 	glPointSize(10);
 	glLineWidth(2);
 	int lines=0.025/scale;
@@ -716,6 +720,7 @@ int main(int argc, char *argv[]) {
 				if(e.key.keysym.sym==SDLK_o) { only(1); }
 				if(e.key.keysym.sym==SDLK_h) { only(0); }
 				if(e.key.keysym.sym==SDLK_a) { all(); }
+				if(e.key.keysym.sym==SDLK_v) { view=!view; }
 				if(e.key.keysym.sym==SDLK_LALT) {
 					SDL_GetMouseState(&drag_x,&drag_y);
 				}
